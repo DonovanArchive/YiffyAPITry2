@@ -1,119 +1,71 @@
 <%= javascript_tag nonce: true do -%>
-  function pct(current,total) {
-    return Math.round((current/total)*100) + "%"
+  function pct(amount, total) {
+    if(amount === 0 || total === 0) return "0%";
+    return Math.round((amount / total)*100) + "%"
   }
+  const stats =  window.stats = <%= @stats.to_json.html_safe %>;
 
-  jQuery(function(){
-    // Do all the math on the clientside (JS) instead of serverside (Ruby)
+  window.addEventListener("DOMContentLoaded", () => {
+    <%= percent("active-posts", "stats.posts.active", "stats.posts.total") %>
+    <%= percent("deleted-posts", "stats.posts.deleted", "stats.posts.total") %>
+    <%= percent("destroyed-posts", "stats.posts.destroyed", "stats.posts.total") %>
 
-    jQuery("#stats-pct-activeposts").html(pct(stats.posts.active, stats.posts.total));
-    jQuery("#stats-pct-deletedposts").html(pct(stats.posts.deleted, stats.posts.total));
-    jQuery("#stats-pct-destroyedposts").html(pct(stats.posts.destroyed, stats.posts.total));
+    <%= percent("safe-posts", "stats.posts.ratings.safe", "stats.posts.existing") %>
+    <%= percent("questionable-posts", "stats.posts.ratings.questionable", "stats.posts.existing") %>
+    <%= percent("explicit-posts", "stats.posts.ratings.explicit", "stats.posts.existing") %>
 
-    jQuery("#stats-pct-publicsets").html(pct(stats.sets.public, stats.sets.public+stats.sets.private));
-    jQuery("#stats-pct-privatesets").html(pct(stats.sets.private, stats.sets.public+stats.sets.private));
+    <% YiffyAPI.config.max_file_sizes.each do |ext, _limit| %>
+      <%= percent("#{ext}-files", "stats.posts.files.#{ext}", "stats.posts.existing") %>
+    <% end %>
 
-    const postsCount = stats.posts.active+stats.posts.deleted
-    jQuery("#stats-pct-jpgposts").html(pct(stats.posts.jpg, postsCount));
-    jQuery("#stats-pct-pngposts").html(pct(stats.posts.png, postsCount));
-    jQuery("#stats-pct-gifposts").html(pct(stats.posts.gif, postsCount));
-    jQuery("#stats-pct-webmposts").html(pct(stats.posts.webm, postsCount));
-    jQuery("#stats-pct-webpposts").html(pct(stats.posts.webp, postsCount));
+    <%= percent("unactivated-users", "stats.users.unactivated", "stats.users.total") %>
+    <% YiffyAPI.config.levels.reject { |_name, level| level == User::Levels::ANONYMOUS }.each do |name, _level|; name = name.tr(" ", "_").downcase %>
+      <%= percent("#{name}-users", "stats.users.#{name}", "stats.users.total") %>
+    <% end %>
 
-    jQuery("#stats-pct-safeposts").html(pct(stats.posts.safe, postsCount));
-    jQuery("#stats-pct-questionableposts").html(pct(stats.posts.questionable, postsCount));
-    jQuery("#stats-pct-explicitposts").html(pct(stats.posts.explicit, postsCount));
+    <%= percent("active-pools", "stats.pools.active", "stats.pools.total") %>
+    <%= percent("inactive-pools", "stats.pools.inactive", "stats.pools.total") %>
+    <%= percent("deleted-pools", "stats.pools.deleted", "stats.pools.total") %>
+    <%= percent("collection-pools", "stats.pools.collection", "stats.pools.existing") %>
+    <%= percent("series-pools", "stats.pools.series", "stats.pools.existing") %>
 
-    jQuery("#stats-pct-unactivatedusers").html(pct(stats.users.unactivated, stats.users.total));
-    jQuery("#stats-pct-blockedusers").html(pct(stats.users.blocked, stats.users.total));
-    jQuery("#stats-pct-memberusers").html(pct(stats.users.member, stats.users.total));
-    jQuery("#stats-pct-privilegedusers").html(pct(stats.users.privileged, stats.users.total));
-    jQuery("#stats-pct-formerstaffusers").html(pct(stats.users.former_staff, stats.users.total));
-    jQuery("#stats-pct-janitorusers").html(pct(stats.users.janitor, stats.users.total));
-    jQuery("#stats-pct-modusers").html(pct(stats.users.mod, stats.users.total));
-    jQuery("#stats-pct-systemusers").html(pct(stats.users.system, stats.users.total));
-    jQuery("#stats-pct-adminusers").html(pct(stats.users.admin, stats.users.total));
+    <%= percent("active-sets", "stats.sets.active", "stats.sets.total") %>
+    <%= percent("deleted-sets", "stats.sets.deleted", "stats.sets.total") %>
+    <%= percent("public-sets", "stats.sets.public", "stats.sets.active") %>
+    <%= percent("private-sets", "stats.sets.private", "stats.sets.active") %>
 
-    jQuery("#stats-pct-activecomments").html(pct(stats.comments.active, stats.comments.total));
-    jQuery("#stats-pct-hiddencomments").html(pct(stats.comments.hidden, stats.comments.total));
-    jQuery("#stats-pct-deletedcomments").html(pct(stats.comments.deleted, stats.comments.total));
+    <%= percent("active-comments", "stats.comments.active", "stats.comments.total") %>
+    <%= percent("deleted-comments", "stats.comments.deleted", "stats.comments.total") %>
+    <%= percent("sticky-comments", "stats.comments.sticky", "stats.comments.active") %>
+    <%= percent("hidden-comments", "stats.comments.hidden", "stats.comments.active") %>
+    <% Comment.warning_types.each do |name, _type| %>
+      <%= percent("warning-#{name}-comments", "stats.comments.warnings.#{name}", "stats.comments.active") %>
+    <% end %>
 
-    jQuery("#stats-pct-activeblips").html(pct(stats.blips.active, stats.blips.total));
-    jQuery("#stats-pct-hiddenblips").html(pct(stats.blips.hidden, stats.blips.total));
-    jQuery("#stats-pct-deletedblips").html(pct(stats.blips.deleted, stats.blips.total));
+    <%= percent("active-forum-topics", "stats.forum_topics.active", "stats.forum_topics.total") %>
+    <%= percent("deleted-forum-topics", "stats.forum_topics.deleted", "stats.forum_topics.total") %>
+    <%= percent("sticky-forum-topics", "stats.forum_topics.sticky", "stats.forum_topics.active") %>
+    <%= percent("locked-forum-topics", "stats.forum_topics.locked", "stats.forum_topics.active") %>
+    <%= percent("hidden-forum-topics", "stats.forum_topics.hidden", "stats.forum_topics.active") %>
 
-    jQuery("#stats-pct-generaltags").html(pct(stats.tags.general, stats.tags.total));
-    jQuery("#stats-pct-artisttags").html(pct(stats.tags.artist, stats.tags.total));
-    jQuery("#stats-pct-charactertags").html(pct(stats.tags.character, stats.tags.total));
-    jQuery("#stats-pct-copyrighttags").html(pct(stats.tags.copyright, stats.tags.total));
-    jQuery("#stats-pct-speciestags").html(pct(stats.tags.species, stats.tags.total));
-    jQuery("#stats-pct-metatags").html(pct(stats.tags.meta, stats.tags.total));
-    jQuery("#stats-pct-invalidtags").html(pct(stats.tags.invalid, stats.tags.total));
-    jQuery("#stats-pct-loretags").html(pct(stats.tags.lore, stats.tags.total));
+    <%= percent("active-forum-posts", "stats.forum_posts.active", "stats.forum_posts.total") %>
+    <%= percent("deleted-forum-posts", "stats.forum_posts.deleted", "stats.forum_posts.total") %>
+    <%= percent("hidden-forum-posts", "stats.forum_posts.hidden", "stats.forum_posts.active") %>
+    <% ForumPost.warning_types.each do |name, _type| %>
+      <%= percent("warning-#{name}-forum-posts", "stats.forum_posts.warnings.#{name}", "stats.forum_posts.active") %>
+    <% end %>
+
+    <%= percent("active-blips", "stats.blips.active", "stats.blips.total") %>
+    <%= percent("deleted-blips", "stats.blips.deleted", "stats.blips.total") %>
+    <%= percent("hidden-blips", "stats.blips.hidden", "stats.blips.active") %>
+    <% Blip.warning_types.each do |name, _type| %>
+      <%= percent("warning-#{name}-blips", "stats.blips.warnings.#{name}", "stats.blips.active") %>
+    <% end %>
+    <%= percent("empty-tags", "stats.tags.empty", "stats.tags.total") %>
+    <% TagCategory.categories.each do |category| %>
+      <%= percent("#{category}-tags", "stats.tags.#{category}", "stats.tags.total") %>
+    <% end %>
   });
-
-  const stats = {
-    posts: {
-      total:       <%= @stats['total_posts'] %>,
-      active:      <%= @stats['active_posts'] %>,
-      deleted:     <%= @stats['deleted_posts'] %>,
-      destroyed:   <%= @stats['destroyed_posts'] %>,
-
-      jpg:         <%= @stats['jpg_posts'] %>,
-      png:         <%= @stats['png_posts'] %>,
-      gif:         <%= @stats['gif_posts'] %>,
-      webp:        <%= @stats['webp_posts'] %>,
-      webm:        <%= @stats['webm_posts'] %>,
-
-      safe:        <%= @stats['safe_posts'] %>,
-      questionable: <%= @stats['questionable_posts'] %>,
-      explicit:    <%= @stats['explicit_posts'] %>,
-    },
-
-    sets: {
-      public:      <%= @stats['public_sets'] %>,
-      private:     <%= @stats['private_sets'] %>,
-    },
-
-    users: {
-      total:        <%= @stats['total_users'] %>,
-      blocked:      <%= @stats['blocked_users'] %>,
-      member:       <%= @stats['member_users'] %>,
-      privileged:   <%= @stats['privileged_users'] %>,
-      former_staff: <%= @stats['former_staff_users'] %>,
-      janitor:      <%= @stats['janitor_users'] %>,
-      mod:          <%= @stats['moderator_users'] %>,
-      system:       <%= @stats['system_users'] %>,
-      admin:        <%= @stats['admin_users'] %>,
-      unactivated:  <%= @stats['unactivated_users'] %>
-    },
-
-    comments: {
-      total:       <%= @stats['total_comments'] %>,
-      active:      <%= @stats['active_comments'] %>,
-      hidden:      <%= @stats['hidden_comments'] %>,
-      deleted:     <%= @stats['deleted_comments'] %>,
-    },
-
-    blips: {
-      total:       <%= @stats['total_blips'] %>,
-      active:      <%= @stats['active_blips'] %>,
-      hidden:      <%= @stats['hidden_blips'] %>,
-      deleted:     <%= @stats['deleted_blips'] %>,
-    },
-
-    tags: {
-      total:       <%= @stats['total_tags'] %>,
-      general:     <%= @stats['general_tags'] %>,
-      artist:      <%= @stats['artist_tags'] %>,
-      character:   <%= @stats['character_tags'] %>,
-      copyright:   <%= @stats['copyright_tags'] %>,
-      species:     <%= @stats['species_tags'] %>,
-      meta:        <%= @stats['meta_tags'] %>,
-      invalid:     <%= @stats['invalid_tags'] %>,
-      lore:        <%= @stats['lore_tags'] %>
-    }
-  };
 <% end -%>
 
 
@@ -122,287 +74,123 @@
   <div class='stats-column' id='stats-column-1'>
     <h2>Site</h2>
     <table class='stats-rounded'>
-      <tr>
-        <td style='width:250px;'>Started</td>
-        <td style='width:105px;'><%= @stats['started'] %></td>
-      </tr>
-      <tr>
-        <td>Average registrations per day</td>
-        <td><%= del(@stats['average_registrations_per_day']) %></td>
-      </tr>
-      <tr>
-        <td>Average posts per day</td>
-        <td><%= del(@stats['average_posts_per_day']) %></td>
-      </tr>
-      <tr>
-        <td>Average comments per day</td>
-        <td><%= del(@stats['average_comments_per_day']) %></td>
-      </tr>
-      <tr>
-        <td>Average forum posts per day</td>
-        <td><%= del(@stats['average_forum_posts_per_day']) %></td>
-      </tr>
-      <tr>
-        <td>Average blips per day</td>
-        <td><%= del(@stats['average_blips_per_day']) %></td>
-      </tr>
+      <%= section("Started", @stats["started"]) %>
     </table>
 
     <h2>Posts</h2>
     <table class='stats-rounded'>
-      <tr>
-        <td style='width:250px;'>Total posts</td>
-        <td style='width:50px;'><%= del(@stats['total_posts']) %></td>
-        <td style='width:50px;'></td>
-      </tr>
-      <tr>
-        <td>Active posts</td>
-        <td><%= del(@stats['active_posts']) %></td><td class='stats-pct' id='stats-pct-activeposts'></td>
-      </tr>
-      <tr>
-        <td>Deleted posts</td>
-        <td><%= del(@stats['deleted_posts']) %></td><td class='stats-pct' id='stats-pct-deletedposts'></td>
-      </tr>
-      <tr>
-        <td>Destroyed posts</td>
-        <td><%= del(@stats['destroyed_posts']) %></td><td class='stats-pct' id='stats-pct-destroyedposts'></td>
-      </tr>
-      <tr>
-        <td>Safe posts</td>
-        <td><%= del(@stats['safe_posts']) %></td><td class='stats-pct' id='stats-pct-safeposts'></td>
-      </tr>
-      <tr>
-        <td>Questionable posts</td>
-        <td><%= del(@stats['questionable_posts']) %></td><td class='stats-pct' id='stats-pct-questionableposts'></td>
-      </tr>
-      <tr>
-        <td>Explicit posts</td>
-        <td><%= del(@stats['explicit_posts']) %></td><td class='stats-pct' id='stats-pct-explicitposts'></td>
-      </tr>
-      <tr>
-        <td>Total post votes</td>
-        <td><%= del(@stats['total_votes']) %></td><td></td>
-      </tr>
-      <tr>
-        <td>Note count</td>
-        <td><%= del(@stats['total_notes']) %></td><td></td>
-      </tr>
-      <tr>
-        <td>Total favorited posts</td>
-        <td><%= del(@stats['total_favorites']) %></td><td></td>
-      </tr>
-      <tr>
-        <td>Pools</td>
-        <td><%= del(@stats['total_pools']) %></td><td></td>
-      </tr>
-      <tr>
-        <td>Average posts per pool</td>
-        <td><%= del(@stats['average_posts_per_pool']) %></td><td></td>
-      </tr>
+      <%= section("Total", @stats["posts"]["total"]) %>
+      <%= section("Average Per Day", @stats["posts"]["average_per_day"]) %>
+      <%= section("Active", @stats["posts"]["active"], "active-posts") %>
+      <%= section("Deleted", @stats["posts"]["deleted"], "deleted-posts") %>
+      <%= section("Destroyed", @stats["posts"]["destroyed"], "destroyed-posts") %>
+      <%= section("Safe", @stats["posts"]["ratings"]["safe"], "safe-posts") %>
+      <%= section("Questionable", @stats["posts"]["ratings"]["questionable"], "questionable-posts") %>
+      <%= section("Explicit", @stats["posts"]["ratings"]["explicit"], "explicit-posts") %>
 
-      <tr>
-        <td>Public sets</td>
-        <td><%= del(@stats['public_sets']) %></td><td class='stats-pct' id='stats-pct-publicsets'></td>
-      </tr>
+    </table>
+    <table class='stats-rounded'>
+      <h2>Image files</h2>
+      <%= section("Total File Size", humansize(@stats["posts"]["files"]["total_size"])) %>
+      <%= section("Average File Size", humansize(@stats["posts"]["files"]["average_size"])) %>
+      <% YiffyAPI.config.max_file_sizes.each do |ext, _limit| %>
+        <%= section(ext.upcase, @stats["posts"]["files"][ext], "#{ext}-files") %>
+      <% end %>
+    </table>
 
-      <tr>
-        <td>Private sets</td>
-        <td><%= del(@stats['private_sets']) %></td><td class='stats-pct' id='stats-pct-privatesets'></td>
-      </tr>
-
-      <tr>
-        <td>Average posts per set</td>
-        <td><%= del(@stats['average_posts_per_set']) %></td><td></td>
-      </tr>
+    <h2>Pools</h2>
+    <table class='stats-rounded'>
+      <%= section("Total", @stats["pools"]["total"]) %>
+      <%= section("Average Posts", @stats["pools"]["average_posts"]) %>
+      <%= section("Existing", @stats["pools"]["existing"]) %>
+      <%= section("Active", @stats["pools"]["active"], "active-pools") %>
+      <%= section("Inactive", @stats["pools"]["inactive"], "inactive-pools") %>
+      <%= section("Deleted", @stats["pools"]["deleted"], "deleted-pools") %>
+      <%= section("Collection", @stats["pools"]["collection"], "collection-pools") %>
+      <%= section("Series", @stats["pools"]["series"], "series-pools") %>
     </table>
   </div>
 
   <div class='stats-column' id='stats-column-2'>
-    <h2>Image files</h2>
+    <h2>Post Sets</h2>
     <table class='stats-rounded'>
-      <tr>
-        <td style='width:250px;'>Total existing posts</td>
-        <td style='width:50px;'><%= del(@stats['active_posts']+@stats['deleted_posts']) %></td>
-        <td style='width:50px;'></td>
-      </tr>
-
-      <tr>
-        <td style='width:250px;'>JPG posts</td>
-        <td style='width:50px;'><%= del(@stats['jpg_posts']) %></td><td class='stats-pct' id='stats-pct-jpgposts'></td>
-      </tr>
-      <tr>
-        <td>PNG posts</td>
-        <td><%= del(@stats['png_posts']) %></td><td class='stats-pct' id='stats-pct-pngposts'></td>
-      </tr>
-      <tr>
-        <td>GIF posts</td>
-        <td><%= del(@stats['gif_posts']) %></td><td class='stats-pct' id='stats-pct-gifposts'></td>
-      </tr>
-      <tr>
-        <td>WebP posts</td>
-        <td><%= del(@stats['webp_posts']) %></td><td class='stats-pct' id='stats-pct-webpposts'></td>
-      </tr>
-      <tr>
-        <td>WebM posts</td>
-        <td><%= del(@stats['webm_posts']) %></td><td class='stats-pct' id='stats-pct-webmposts'></td>
-      </tr>
-      <tr>
-        <td>Average file size</td>
-        <td><%= humansize(@stats['average_file_size']) %></td><td></td>
-      </tr>
-      <tr>
-        <td>Total file size</td>
-        <td><%= humansize(@stats['total_file_size'],1) %></td><td></td>
-      </tr>
+      <%= section("Total", @stats["sets"]["total"]) %>
+      <%= section("Average Posts", @stats["sets"]["average_posts"]) %>
+      <%= section("Active", @stats["pools"]["sets"], "active-sets") %>
+      <%= section("Deleted", @stats["sets"]["deleted"], "deleted-sets") %>
+      <%= section("Public", @stats["sets"]["public"], "public-sets") %>
+      <%= section("Private", @stats["sets"]["private"], "private-sets") %>
     </table>
+
     <h2>Users</h2>
     <table class='stats-rounded'>
-      <tr>
-        <td style='width:250px;'>User count</td>
-        <td style='width:50px;'><%= del(@stats['total_users']) %></td>
-        <td style='width:50px;'></td>
-      </tr>
-      <tr>
-        <td>Unactivated users</td>
-        <td><%= del(@stats['unactivated_users']) %></td><td class='stats-pct' id='stats-pct-unactivatedusers'></td>
-      </tr>
-      <tr>
-        <td>Banned users</td>
-        <td><%= del(@stats['blocked_users']) %></td><td class='stats-pct' id='stats-pct-blockedusers'></td>
-      </tr>
-      <tr>
-        <td>Members</td>
-        <td><%= del(@stats['member_users']) %></td><td class='stats-pct' id='stats-pct-memberusers'></td>
-      </tr>
-      <tr>
-        <td>Privileged users</td>
-        <td><%= del(@stats['privileged_users']) %></td><td class='stats-pct' id='stats-pct-privilegedusers'></td>
-      </tr>
-      <tr>
-        <td>Former Staff users</td>
-        <td><%= del(@stats['former_staff_users']) %></td><td class='stats-pct' id='stats-pct-formerstaffusers'></td>
-      </tr>
-      <tr>
-        <td>Janitors</td>
-        <td><%= del(@stats['janitor_users']) %></td><td class='stats-pct' id='stats-pct-janitorusers'></td>
-      </tr>
-      <tr>
-        <td>Mods</td>
-        <td><%= del(@stats['moderator_users']) %></td><td class='stats-pct' id='stats-pct-modusers'></td>
-      </tr>
-      <tr>
-        <td>System</td>
-        <td><%= del(@stats['system_users']) %></td><td class='stats-pct' id='stats-pct-systemusers'></td>
-      </tr>
-      <tr>
-        <td>Admins</td>
-        <td><%= del(@stats['admin_users']) %></td><td class='stats-pct' id='stats-pct-adminusers'></td>
-      </tr>
-      <tr>
-        <td>Dmails sent</td>
-        <td><%= del(@stats['total_dmails']) %></td><td></td>
-      </tr>
+      <%= section("Total", @stats["users"]["total"]) %>
+      <%= section("Unactivated", @stats["users"]["unactivated"], "unactivated-users") %>
+      <% YiffyAPI.config.levels.reject { |_name, level| level == User::Levels::ANONYMOUS }.each do |name, _level|; upname = name; name = name.tr(" ", "_").downcase %>
+        <%= section(upname, @stats["users"][name], "#{name}-users") %>
+      <% end %>
+      <%= section("DMails Sent", @stats["dmails"]["total"]) %>
+      <%= section("Average DMails Per Day", @stats["dmails"]["average_per_day"]) %>
+    </table>
+
+    <h2>Comments</h2>
+    <table class='stats-rounded'>
+      <%= section("Total", @stats["comments"]["total"]) %>
+      <%= section("Average Per Day", @stats["comments"]["average_per_day"]) %>
+      <%= section("Active", @stats["comments"]["active"], "active-comments") %>
+      <%= section("Deleted", @stats["comments"]["deleted"], "deleted-comments") %>
+      <%= section("Sticky", @stats["comments"]["sticky"], "sticky-comments") %>
+      <%= section("Locked", @stats["comments"]["locked"], "locked-comments") %>
+      <%= section("Hidden", @stats["comments"]["hidden"], "hidden-comments") %>
+      <% Comment.warning_types.each do |type, _value| %>
+        <%= section("\"#{type}\" Marks", @stats["comments"]["warnings"][type], "warning-#{type}-comments") %>
+      <% end %>
+    </table>
+
+    <h2>Forums Topics</h2>
+    <table class='stats-rounded'>
+      <%= section("Total", @stats["forum_topics"]["total"]) %>
+      <%= section("Average Per Day", @stats["forum_topics"]["average_per_day"]) %>
+      <%= section("Active", @stats["forum_topics"]["active"], "active-forum-topics") %>
+      <%= section("Deleted", @stats["forum_topics"]["deleted"], "deleted-forum-topics") %>
+      <%= section("Sticky", @stats["forum_topics"]["sticky"], "sticky-forum-topics") %>
+      <%= section("Locked", @stats["forum_topics"]["locked"], "locked-forum-topics") %>
+      <%= section("Hidden", @stats["forum_topics"]["hidden"], "hidden-forum-topics") %>
     </table>
   </div>
 
   <div class='stats-column' id='stats-column-3'>
-    <h2>Comments</h2>
+    <h2>Forums Posts</h2>
     <table class='stats-rounded'>
-      <tr>
-        <td style='width:250px;'>Comment count</td>
-        <td style='width:50px;'><%= del(@stats['total_comments']) %></td>
-        <td style='width:50px;'></td>
-      </tr>
-      <tr>
-        <td>Active comments</td>
-        <td><%= del(@stats['active_comments']) %></td><td class='stats-pct' id='stats-pct-activecomments'></td>
-      </tr>
-      <tr>
-        <td>Hidden comments</td>
-        <td><%= del(@stats['hidden_comments']) %></td><td class='stats-pct' id='stats-pct-hiddencomments'></td>
-      </tr>
-      <tr>
-        <td>Deleted comments</td>
-        <td><%= del(@stats['deleted_comments']) %></td><td class='stats-pct' id='stats-pct-deletedcomments'></td>
-      </tr>
-    </table>
-
-    <h2>Forum Posts</h2>
-    <table class='stats-rounded'>
-      <tr>
-        <td style='width:250px;'>Thread count</td>
-        <td style='width:100px;'><%= del(@stats['total_forum_threads']) %></td>
-      </tr>
-      <tr>
-        <td>Post count</td>
-        <td><%= del(@stats['total_forum_posts']) %></td>
-      </tr>
-      <tr>
-        <td>Average posts per thread</td>
-        <td><%= del(@stats['average_posts_per_thread']) %></td>
-      </tr>
+      <%= section("Total", @stats["forum_posts"]["total"]) %>
+      <%= section("Average Per Day", @stats["forum_posts"]["average_per_day"]) %>
+      <%= section("Active", @stats["forum_posts"]["active"], "active-forum-posts") %>
+      <%= section("Deleted", @stats["forum_posts"]["deleted"], "deleted-forum-posts") %>
+      <%= section("Hidden", @stats["forum_posts"]["hidden"], "hidden-forum-posts") %>
+      <% ForumPost.warning_types.each do |type, _value| %>
+        <%= section("\"#{type}\" Marks", @stats["forum_posts"]["warnings"][type], "warning-#{type}-forum-posts") %>
+      <% end %>
     </table>
 
     <h2>Blips</h2>
     <table class='stats-rounded'>
-      <tr>
-        <td style='width:250px;'>Blip count</td>
-        <td style='width:50px;'><%= del(@stats['total_blips']) %></td>
-        <td style='width:50px;'></td>
-      </tr>
-      <tr>
-        <td>Active blips</td>
-        <td><%= del(@stats['active_blips']) %></td><td class='stats-pct' id='stats-pct-activeblips'></td>
-      </tr>
-      <tr>
-        <td>Hidden blips</td>
-        <td><%= del(@stats['hidden_blips']) %></td><td class='stats-pct' id='stats-pct-hiddenblips'></td>
-      </tr>
-      <tr>
-        <td>Deleted blips</td>
-        <td><%= del(@stats['deleted_blips']) %></td><td class='stats-pct' id='stats-pct-deletedblips'></td>
-      </tr>
+      <%= section("Total", @stats["blips"]["total"]) %>
+      <%= section("Average Per Day", @stats["blips"]["average_per_day"]) %>
+      <%= section("Active", @stats["blips"]["active"], "active-blips") %>
+      <%= section("Deleted", @stats["blips"]["deleted"], "deleted-blips") %>
+      <%= section("Hidden", @stats["blips"]["hidden"], "hidden-blips") %>
+      <% Blip.warning_types.each do |type, _value| %>
+        <%= section("\"#{type}\" Marks", @stats["blips"]["warnings"][type], "warning-#{type}-blips") %>
+      <% end %>
     </table>
 
     <h2>Tags</h2>
     <table class='stats-rounded'>
-      <tr>
-        <td style='width:250px;'>Tag count</td>
-        <td style='width:50px;'><%= del(@stats['total_tags']) %></td>
-        <td style='width:50px;'></td>
-      </tr>
-      <tr>
-        <td>General tag count</td>
-        <td><%= del(@stats['general_tags']) %></td><td class='stats-pct' id='stats-pct-generaltags'></td>
-      </tr>
-      <tr>
-        <td>Artist tag count</td>
-        <td><%= del(@stats['artist_tags']) %></td><td class='stats-pct' id='stats-pct-artisttags'></td>
-      </tr>
-      <tr>
-        <td>Character tag count</td>
-        <td><%= del(@stats['character_tags']) %></td><td class='stats-pct' id='stats-pct-charactertags'></td>
-      </tr>
-      <tr>
-        <td>Copyright tag count</td>
-        <td><%= del(@stats['copyright_tags']) %></td><td class='stats-pct' id='stats-pct-copyrighttags'></td>
-      </tr>
-      <tr>
-        <td>Species tag count</td>
-        <td><%= del(@stats['species_tags']) %></td><td class='stats-pct' id='stats-pct-speciestags'></td>
-      </tr>
-      <tr>
-        <td>Meta tag count</td>
-        <td><%= del(@stats['meta_tags']) %></td><td class='stats-pct' id='stats-pct-metatags'></td>
-      </tr>
-      <tr>
-        <td>Invalid tag count</td>
-        <td><%= del(@stats['invalid_tags']) %></td><td class='stats-pct' id='stats-pct-invalidtags'></td>
-      </tr>
-      <tr>
-        <td>Lore tag count</td>
-        <td><%= del(@stats['lore_tags']) %></td><td class='stats-pct' id='stats-pct-loretags'></td>
-      </tr>
+      <%= section("Total", @stats["tags"]["total"]) %>
+      <%= section("Empty", @stats["tags"]["empty"], "empty-tags") %>
+      <% TagCategory.name_and_header.each do |name, header| %>
+        <%= section(header, @stats["tags"][name], "#{name}-tags") %>
+      <% end %>
     </table>
   </div>
 </div>

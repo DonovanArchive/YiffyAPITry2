@@ -37,6 +37,11 @@ class TagCategory
     def mod_only_mapping
       @@mod_only_mapping ||= Hash[YiffyAPI.config.full_tag_category_mapping.map {|k,v| [k, v["mod_only"] || false]}]
     end
+
+    # A 2d hash of [name, header]
+    def name_and_header
+      @@name_and_header = Hash[YiffyAPI.config.full_tag_category_mapping.map {|k,v| [k, v["header"]]}]
+    end
   end
 
   module Lists
