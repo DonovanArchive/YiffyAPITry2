@@ -23,7 +23,7 @@ module PostSets
       @posts ||= begin
         posts = pool.posts(offset: offset, limit: limit)
         options = { mode: :numbered, per_page: limit, total: pool.post_count, current_page: current_page }
-        Danbooru::Paginator::PaginatedArray.new(posts, options)
+        YiffyAPI::Paginator::PaginatedArray.new(posts, options)
       end
     end
 

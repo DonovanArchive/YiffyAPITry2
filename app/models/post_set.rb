@@ -25,7 +25,7 @@ class PostSet < ApplicationRecord
   validates :shortname, length: { in: 3..50, message: 'must be between three and fifty characters long' }
   validates :shortname, format: { with: /\A[\w]+\z/, message: "must only contain numbers, lowercase letters, and underscores" }
   validates :shortname, format: { with: /\A\d*[a-z_][\w]*\z/, message: "must contain at least one lowercase letter or underscore" }
-  validates :description, length: { maximum: Danbooru.config.pool_descr_max_size }
+  validates :description, length: { maximum: YiffyAPI.config.pool_descr_max_size }
   validate :validate_number_of_posts
   validate :can_make_public, if: :is_public_changed?
   validate :set_per_hour_limit, on: :create
@@ -224,7 +224,7 @@ class PostSet < ApplicationRecord
 
     def posts(options = {})
       offset = options[:offset] || 0
-      limit = options[:limit] || Danbooru.config.posts_per_page
+      limit = options[:limit] || YiffyAPI.config.posts_per_page
       slice = post_ids.slice(offset, limit)
       if slice && slice.any?
         Post.where(id: slice).sort_by {|record| slice.index {|id| id == record.id}}

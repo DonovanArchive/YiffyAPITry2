@@ -1,4 +1,4 @@
-module Danbooru
+module YiffyAPI
   module Paginator
     module NumberedCollectionExtension
       attr_accessor :current_page, :total_pages

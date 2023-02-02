@@ -16,7 +16,7 @@ class UploadWhitelistTest < ActiveSupport::TestCase
 
     should "bypass for admins" do
       CurrentUser.user.level = 50
-      Danbooru.config.stubs(:bypass_upload_whitelist?).returns(true)
+      YiffyAPI.config.stubs(:bypass_upload_whitelist?).returns(true)
       assert_equal([true, "bypassed"], UploadWhitelist.is_whitelisted?(Addressable::URI.parse("https://123.com/what.png")))
     end
   end

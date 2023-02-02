@@ -72,11 +72,11 @@ class PostReplacement < ApplicationRecord
     # Janitor bypass replacement limits
     return true if creator.is_janitor?
 
-    if post.replacements.where(creator_id: creator.id).where('created_at > ?', 1.day.ago).count >= Danbooru.config.post_replacement_per_day_limit
+    if post.replacements.where(creator_id: creator.id).where('created_at > ?', 1.day.ago).count >= YiffyAPI.config.post_replacement_per_day_limit
       self.errors.add(:creator, 'has already suggested too many replacements for this post today')
       throw :abort
     end
-    if post.replacements.where(creator_id: creator.id).count >= Danbooru.config.post_replacement_per_post_limit
+    if post.replacements.where(creator_id: creator.id).count >= YiffyAPI.config.post_replacement_per_post_limit
       self.errors.add(:creator, 'has already suggested too many total replacements for this post')
       throw :abort
     end
@@ -90,7 +90,7 @@ class PostReplacement < ApplicationRecord
   module StorageMethods
     def remove_files
       PostEvent.add(post_id, CurrentUser.user, :replacement_deleted, { replacement_id: id, md5: md5, storage_id: storage_id})
-      Danbooru.config.storage_manager.delete_replacement(self)
+      YiffyAPI.config.storage_manager.delete_replacement(self)
     end
 
     def fetch_source_file
@@ -139,27 +139,27 @@ class PostReplacement < ApplicationRecord
 
     def write_storage_file
       self.storage_id = SecureRandom.hex(16)
-      Danbooru.config.storage_manager.store_replacement(replacement_file, self, :original)
+      YiffyAPI.config.storage_manager.store_replacement(replacement_file, self, :original)
       thumbnail_file = PostThumbnailer.generate_thumbnail(replacement_file, is_video? ? :video : :image)
-      Danbooru.config.storage_manager.store_replacement(thumbnail_file, self, :preview)
+      YiffyAPI.config.storage_manager.store_replacement(thumbnail_file, self, :preview)
     ensure
       thumbnail_file.try(:close!)
     end
 
     def replacement_file_path
-      Danbooru.config.storage_manager.replacement_path(self, file_ext, :original)
+      YiffyAPI.config.storage_manager.replacement_path(self, file_ext, :original)
     end
 
     def replacement_thumb_path
-      Danbooru.config.storage_manager.replacement_path(self, file_ext, :preview)
+      YiffyAPI.config.storage_manager.replacement_path(self, file_ext, :preview)
     end
 
     def replacement_file_url
-      Danbooru.config.storage_manager.replacement_url(self)
+      YiffyAPI.config.storage_manager.replacement_url(self)
     end
 
     def replacement_thumb_url
-      Danbooru.config.storage_manager.replacement_url(self, :preview)
+      YiffyAPI.config.storage_manager.replacement_url(self, :preview)
     end
   end
 
@@ -232,7 +232,7 @@ class PostReplacement < ApplicationRecord
       {
           uploader_id: creator_id,
           uploader_ip_addr: creator_ip_addr,
-          file: Danbooru.config.storage_manager.open(Danbooru.config.storage_manager.replacement_path(self, file_ext, :original)),
+          file: YiffyAPI.config.storage_manager.open(YiffyAPI.config.storage_manager.replacement_path(self, file_ext, :original)),
           tag_string: post.tag_string,
           rating: post.rating,
           source: "#{self.source}\n" + post.source,

@@ -4,7 +4,7 @@ class UserTest < ActiveSupport::TestCase
   context "A user" do
     setup do
       # stubbed to true in test_helper.rb
-      Danbooru.config.stubs(:disable_throttles?).returns(false)
+      YiffyAPI.config.stubs(:disable_throttles?).returns(false)
       @user = create(:user)
       CurrentUser.user = @user
     end
@@ -60,14 +60,14 @@ class UserTest < ActiveSupport::TestCase
 
     should "limit comment votes" do
       # allow creating one more comment than votes so creating a vote can fail later on
-      Danbooru.config.stubs(:member_comment_limit).returns(Danbooru.config.comment_vote_limit + 1)
+      YiffyAPI.config.stubs(:member_comment_limit).returns(YiffyAPI.config.comment_vote_limit + 1)
       assert_equal(@user.can_comment_vote_with_reason, :REJ_NEWBIE)
       @user.update_column(:created_at, 1.year.ago)
       comment = nil
       user2 = create(:user)
       user2.update_column(:created_at, 1.year.ago)
 
-      Danbooru.config.comment_vote_limit.times do
+      YiffyAPI.config.comment_vote_limit.times do
         as(user2) do
           comment = create(:comment)
         end
@@ -93,7 +93,7 @@ class UserTest < ActiveSupport::TestCase
       @user.update_column(:level, User::Levels::MEMBER)
       @user.update_column(:created_at, 1.year.ago)
       assert(@user.can_comment_with_reason)
-      Danbooru.config.member_comment_limit.times do
+      YiffyAPI.config.member_comment_limit.times do
         create(:comment)
       end
       assert_equal(@user.can_comment_with_reason, :REJ_LIMITED)
@@ -104,7 +104,7 @@ class UserTest < ActiveSupport::TestCase
       @user.update_column(:created_at, 1.year.ago)
       topic = create(:forum_topic)
       # Creating a topic automatically creates a post
-      (Danbooru.config.member_comment_limit - 1).times do
+      (YiffyAPI.config.member_comment_limit - 1).times do
         create(:forum_post, topic_id: topic.id)
       end
       assert_equal(@user.can_forum_post_with_reason, :REJ_LIMITED)
@@ -146,8 +146,8 @@ class UserTest < ActiveSupport::TestCase
     end
 
     context "name" do
-      should "be #{Danbooru.config.default_guest_name} given an invalid user id" do
-        assert_equal(Danbooru.config.default_guest_name, User.id_to_name(-1))
+      should "be #{YiffyAPI.config.default_guest_name} given an invalid user id" do
+        assert_equal(YiffyAPI.config.default_guest_name, User.id_to_name(-1))
       end
 
       should "not contain whitespace" do
@@ -265,7 +265,7 @@ class UserTest < ActiveSupport::TestCase
     context "that might be a sock puppet" do
       setup do
         @user = create(:user, last_ip_addr: "127.0.0.2")
-        Danbooru.config.unstub(:enable_sock_puppet_validation?)
+        YiffyAPI.config.unstub(:enable_sock_puppet_validation?)
       end
 
       should "not validate" do

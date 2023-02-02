@@ -8,9 +8,9 @@ class StorageManager
   attr_reader :base_url, :base_dir, :hierarchical, :large_image_prefix, :protected_prefix, :base_path, :replacement_prefix
 
   def initialize(base_url: default_base_url, base_path: default_base_path, base_dir: DEFAULT_BASE_DIR, hierarchical: false,
-                 large_image_prefix: Danbooru.config.large_image_prefix,
-                 protected_prefix: Danbooru.config.protected_path_prefix,
-                 replacement_prefix: Danbooru.config.replacement_path_prefix)
+                 large_image_prefix: YiffyAPI.config.large_image_prefix,
+                 protected_prefix: YiffyAPI.config.protected_path_prefix,
+                 replacement_prefix: YiffyAPI.config.replacement_path_prefix)
     @base_url = base_url.chomp("/")
     @base_dir = base_dir
     @base_path = base_path
@@ -66,7 +66,7 @@ class StorageManager
       delete(file_path(md5, file_ext, type, false))
       delete(file_path(md5, file_ext, type, true))
     end
-    Danbooru.config.video_rescales.each do |k,v|
+    YiffyAPI.config.video_rescales.each do |k,v|
       ['mp4','webm'].each do |ext|
         delete(file_path(md5, ext, :scaled, false, scale_factor: k.to_s))
         delete(file_path(md5, ext, :scaled, true, scale_factor: k.to_s))
@@ -93,7 +93,7 @@ class StorageManager
     raise NotImplementedError, "move_file_undelete not implemented"
   end
 
-  def protected_params(url, post, secret: Danbooru.config.protected_file_secret)
+  def protected_params(url, post, secret: YiffyAPI.config.protected_file_secret)
     user_id = CurrentUser.id
     ip = CurrentUser.ip_addr
     time = (Time.now + 15.minute).to_i
@@ -135,7 +135,7 @@ class StorageManager
     file = "#{replacement.storage_id}#{'_thumb' if image_size == :preview}.#{replacement.file_ext}"
     base = "#{base_path}/#{replacement_prefix}"
     path = "#{base}/#{subdir}#{file}"
-    "#{base_url}#{path}#{protected_params(path, nil, secret: Danbooru.config.replacement_file_secret)}"
+    "#{base_url}#{path}#{protected_params(path, nil, secret: YiffyAPI.config.replacement_file_secret)}"
   end
 
   def root_url

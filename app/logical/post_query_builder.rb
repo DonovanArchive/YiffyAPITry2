@@ -81,8 +81,8 @@ class PostQueryBuilder
 
     relation = Post.all
 
-    if q[:tag_count].to_i > Danbooru.config.tag_query_limit
-      raise ::Post::SearchError.new("You cannot search for more than #{Danbooru.config.tag_query_limit} tags at a time")
+    if q[:tag_count].to_i > YiffyAPI.config.tag_query_limit
+      raise ::Post::SearchError.new("You cannot search for more than #{YiffyAPI.config.tag_query_limit} tags at a time")
     end
 
     if CurrentUser.safe_mode?

@@ -96,7 +96,7 @@ class ForumTopicsControllerTest < ActionDispatch::IntegrationTest
     context "create action" do
       should "create a new forum topic and post" do
         assert_difference(["ForumPost.count", "ForumTopic.count"], 1) do
-          post_auth forum_topics_path, @user, params: {:forum_topic => {:title => "bababa", :category_id => Danbooru.config.alias_implication_forum_category, :original_post_attributes => {:body => "xaxaxa"}}}
+          post_auth forum_topics_path, @user, params: {:forum_topic => { :title => "bababa", :category_id => YiffyAPI.config.alias_implication_forum_category, :original_post_attributes => { :body => "xaxaxa"}}}
         end
 
         forum_topic = ForumTopic.last

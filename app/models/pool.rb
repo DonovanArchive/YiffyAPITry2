@@ -7,7 +7,7 @@ class Pool < ApplicationRecord
 
   validates :name, uniqueness: { case_sensitive: false, if: :name_changed? }
   validates :name, length: { minimum: 1, maximum: 250 }
-  validates :description, length: { maximum: Danbooru.config.pool_descr_max_size }
+  validates :description, length: { maximum: YiffyAPI.config.pool_descr_max_size }
   validate :user_not_create_limited, on: :create
   validate :user_not_limited, on: :update, if: :limited_attribute_changed?
   validate :user_not_posts_limited, on: :update, if: :post_ids_changed?
@@ -262,7 +262,7 @@ class Pool < ApplicationRecord
 
   def posts(options = {})
     offset = options[:offset] || 0
-    limit = options[:limit] || Danbooru.config.posts_per_page
+    limit = options[:limit] || YiffyAPI.config.posts_per_page
     slice = post_ids.slice(offset, limit)
     if slice && slice.any?
       # This hack is here to work around posts that are not found but present in the pool id list.
@@ -351,12 +351,12 @@ class Pool < ApplicationRecord
   end
 
   def category_changeable_by?(user)
-    user.is_janitor? || (user.is_member? && post_count <= Danbooru.config.pool_category_change_limit)
+    user.is_janitor? || (user.is_member? && post_count <= YiffyAPI.config.pool_category_change_limit)
   end
 
   def updater_can_change_category
     if category_changed? && !category_changeable_by?(CurrentUser.user)
-      errors.add(:base, "You cannot change the category of pools with greater than #{Danbooru.config.pool_category_change_limit} posts")
+      errors.add(:base, "You cannot change the category of pools with greater than #{YiffyAPI.config.pool_category_change_limit} posts")
     end
   end
 

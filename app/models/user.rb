@@ -9,7 +9,7 @@ class User < ApplicationRecord
   end
 
   module Levels
-    Danbooru.config.levels.each do |name, level|
+    YiffyAPI.config.levels.each do |name, level|
       const_set(name.upcase.tr(' ', '_'), level)
     end
   end
@@ -60,7 +60,7 @@ class User < ApplicationRecord
     replacements_beta
   )
 
-  include Danbooru::HasBitFlags
+  include YiffyAPI::HasBitFlags
   has_bit_flags BOOLEAN_ATTRIBUTES, :field => "bit_prefs"
 
   attr_accessor :password, :old_password, :validate_email_format, :skip_email_blank_check
@@ -81,15 +81,15 @@ class User < ApplicationRecord
   validates :password, confirmation: true
   validates :password_confirmation, presence: { if: ->(rec) { rec.new_record? || rec.old_password.present? } }
   validate :validate_ip_addr_is_not_banned, :on => :create
-  validate :validate_sock_puppets, :on => :create, :if => -> { Danbooru.config.enable_sock_puppet_validation? }
+  validate :validate_sock_puppets, :on => :create, :if => -> { YiffyAPI.config.enable_sock_puppet_validation? }
   before_validation :normalize_blacklisted_tags, if: ->(rec) { rec.blacklisted_tags_changed? }
   before_validation :set_per_page
   before_validation :staff_cant_disable_dmail
   before_validation :blank_out_nonexistent_avatars
   validates :blacklisted_tags, length: { maximum: 150_000 }
   validates :custom_style, length: { maximum: 500_000 }
-  validates :profile_about, length: { maximum: Danbooru.config.user_about_max_size }
-  validates :profile_artinfo, length: { maximum: Danbooru.config.user_about_max_size }
+  validates :profile_about, length: { maximum: YiffyAPI.config.user_about_max_size }
+  validates :profile_artinfo, length: { maximum: YiffyAPI.config.user_about_max_size }
   validates :time_zone, inclusion: { in: ActiveSupport::TimeZone.all.map(&:name) }
   before_create :encrypt_password_on_create
   before_update :encrypt_password_on_update
@@ -174,7 +174,7 @@ class User < ApplicationRecord
           return RequestStore[:id_name_cache][user_id]
         end
         name = Cache.fetch("uin:#{user_id}", 4.hours) do
-          select_value_sql("SELECT name FROM users WHERE id = ?", user_id) || Danbooru.config.default_guest_name
+          select_value_sql("SELECT name FROM users WHERE id = ?", user_id) || YiffyAPI.config.default_guest_name
         end
         RequestStore[:id_name_cache][user_id] = name
         name
@@ -279,7 +279,7 @@ class User < ApplicationRecord
 
     module ClassMethods
       def system
-        User.find_by!(name: Danbooru.config.system_user)
+        User.find_by!(name: YiffyAPI.config.system_user)
       end
 
       def anonymous
@@ -290,11 +290,11 @@ class User < ApplicationRecord
       end
 
       def level_hash
-        Danbooru.config.levels
+        YiffyAPI.config.levels
       end
 
       def level_string(value)
-        Danbooru.config.levels.invert[value] || ""
+        YiffyAPI.config.levels.invert[value] || ""
       end
     end
 
@@ -319,7 +319,7 @@ class User < ApplicationRecord
     end
 
     # Defines various convenience methods for finding out the user's level
-    Danbooru.config.levels.each do |name, value|
+    YiffyAPI.config.levels.each do |name, value|
       # TODO: HACK: Remove this and make the below logic better to work with the new setup.
       next if [0, 10].include?(value)
       normalized_name = name.downcase.tr(' ', '_')
@@ -351,7 +351,7 @@ class User < ApplicationRecord
 
     def set_per_page
       if per_page.nil?
-        self.per_page = Danbooru.config.posts_per_page
+        self.per_page = YiffyAPI.config.posts_per_page
       end
 
       return true
@@ -392,7 +392,7 @@ class User < ApplicationRecord
     def enable_email_verification?
       # Allow admins to edit users with blank emails
       return false if email.blank? && !email_changed? && skip_email_blank_check
-      Danbooru.config.enable_email_verification? && validate_email_format
+      YiffyAPI.config.enable_email_verification? && validate_email_format
     end
 
     def validate_email_address_allowed
@@ -454,12 +454,12 @@ class User < ApplicationRecord
     extend Memoist
 
     def younger_than(duration)
-      return false if Danbooru.config.disable_age_checks?
+      return false if YiffyAPI.config.disable_age_checks?
       created_at > duration.ago
     end
 
     def older_than(duration)
-      return true if Danbooru.config.disable_age_checks?
+      return true if YiffyAPI.config.disable_age_checks?
       created_at < duration.ago
     end
 
@@ -467,7 +467,7 @@ class User < ApplicationRecord
       define_method("#{name}_limit".to_sym, limiter)
 
       define_method("can_#{name}_with_reason".to_sym) do
-        return true if Danbooru.config.disable_throttles?
+        return true if YiffyAPI.config.disable_throttles?
         return send(checker) if checker && send(checker)
         return :REJ_NEWBIE if newbie_duration && younger_than(newbie_duration)
         return :REJ_LIMITED if send("#{name}_limit") <= 0
@@ -483,41 +483,41 @@ class User < ApplicationRecord
       is_privileged?
     end
 
-    create_user_throttle(:artist_edit, ->{ Danbooru.config.artist_edit_limit - ArtistVersion.for_user(id).where('updated_at > ?', 1.hour.ago).count },
+    create_user_throttle(:artist_edit, ->{ YiffyAPI.config.artist_edit_limit - ArtistVersion.for_user(id).where('updated_at > ?', 1.hour.ago).count },
                          :general_bypass_throttle?, 7.days)
-    create_user_throttle(:post_edit, ->{ Danbooru.config.post_edit_limit - PostVersion.for_user(id).where('updated_at > ?', 1.hour.ago).count },
+    create_user_throttle(:post_edit, ->{ YiffyAPI.config.post_edit_limit - PostVersion.for_user(id).where('updated_at > ?', 1.hour.ago).count },
                          :general_bypass_throttle?, 7.days)
-    create_user_throttle(:wiki_edit, ->{ Danbooru.config.wiki_edit_limit - WikiPageVersion.for_user(id).where('updated_at > ?', 1.hour.ago).count },
+    create_user_throttle(:wiki_edit, ->{ YiffyAPI.config.wiki_edit_limit - WikiPageVersion.for_user(id).where('updated_at > ?', 1.hour.ago).count },
                          :general_bypass_throttle?, 7.days)
-    create_user_throttle(:pool, ->{ Danbooru.config.pool_limit - Pool.for_user(id).where('created_at > ?', 1.hour.ago).count },
+    create_user_throttle(:pool, ->{ YiffyAPI.config.pool_limit - Pool.for_user(id).where('created_at > ?', 1.hour.ago).count },
                          :is_janitor?, 7.days)
-    create_user_throttle(:pool_edit, ->{ Danbooru.config.pool_edit_limit - PoolVersion.for_user(id).where('updated_at > ?', 1.hour.ago).count },
+    create_user_throttle(:pool_edit, ->{ YiffyAPI.config.pool_edit_limit - PoolVersion.for_user(id).where('updated_at > ?', 1.hour.ago).count },
                          :is_janitor?, 3.days)
-    create_user_throttle(:pool_post_edit, -> { Danbooru.config.pool_post_edit_limit - PoolVersion.for_user(id).where('updated_at > ?', 1.hour.ago).group(:pool_id).count(:pool_id).length },
+    create_user_throttle(:pool_post_edit, -> { YiffyAPI.config.pool_post_edit_limit - PoolVersion.for_user(id).where('updated_at > ?', 1.hour.ago).group(:pool_id).count(:pool_id).length },
                           :general_bypass_throttle?, 7.days)
-    create_user_throttle(:note_edit, ->{ Danbooru.config.note_edit_limit - NoteVersion.for_user(id).where('updated_at > ?', 1.hour.ago).count },
+    create_user_throttle(:note_edit, ->{ YiffyAPI.config.note_edit_limit - NoteVersion.for_user(id).where('updated_at > ?', 1.hour.ago).count },
                          :general_bypass_throttle?, 3.days)
-    create_user_throttle(:comment, ->{ Danbooru.config.member_comment_limit - Comment.for_creator(id).where('created_at > ?', 1.hour.ago).count },
+    create_user_throttle(:comment, ->{ YiffyAPI.config.member_comment_limit - Comment.for_creator(id).where('created_at > ?', 1.hour.ago).count },
                          :general_bypass_throttle?, 7.days)
-    create_user_throttle(:forum_post, ->{ Danbooru.config.member_comment_limit - ForumPost.for_user(id).where('created_at > ?', 1.hour.ago).count },
+    create_user_throttle(:forum_post, ->{ YiffyAPI.config.member_comment_limit - ForumPost.for_user(id).where('created_at > ?', 1.hour.ago).count },
                          nil, 3.days)
-    create_user_throttle(:blip, ->{ Danbooru.config.blip_limit - Blip.for_creator(id).where('created_at > ?', 1.hour.ago).count },
+    create_user_throttle(:blip, ->{ YiffyAPI.config.blip_limit - Blip.for_creator(id).where('created_at > ?', 1.hour.ago).count },
                          :general_bypass_throttle?, 3.days)
-    create_user_throttle(:dmail, ->{ Danbooru.config.dmail_limit - Dmail.sent_by_id(id).where('created_at > ?', 1.hour.ago).count },
+    create_user_throttle(:dmail, ->{ YiffyAPI.config.dmail_limit - Dmail.sent_by_id(id).where('created_at > ?', 1.hour.ago).count },
                          nil, 7.days)
-    create_user_throttle(:dmail_minute, ->{ Danbooru.config.dmail_minute_limit - Dmail.sent_by_id(id).where('created_at > ?', 1.minute.ago).count },
+    create_user_throttle(:dmail_minute, ->{ YiffyAPI.config.dmail_minute_limit - Dmail.sent_by_id(id).where('created_at > ?', 1.minute.ago).count },
                          nil, 7.days)
-    create_user_throttle(:comment_vote, ->{ Danbooru.config.comment_vote_limit - CommentVote.for_user(id).where("created_at > ?", 1.hour.ago).count },
+    create_user_throttle(:comment_vote, ->{ YiffyAPI.config.comment_vote_limit - CommentVote.for_user(id).where("created_at > ?", 1.hour.ago).count },
                          :general_bypass_throttle?, 3.days)
-    create_user_throttle(:post_vote, ->{ Danbooru.config.post_vote_limit - PostVote.for_user(id).where("created_at > ?", 1.hour.ago).count },
+    create_user_throttle(:post_vote, ->{ YiffyAPI.config.post_vote_limit - PostVote.for_user(id).where("created_at > ?", 1.hour.ago).count },
                          :general_bypass_throttle?, nil)
-    create_user_throttle(:post_flag, ->{ Danbooru.config.post_flag_limit - PostFlag.for_creator(id).where("created_at > ?", 1.hour.ago).count },
+    create_user_throttle(:post_flag, ->{ YiffyAPI.config.post_flag_limit - PostFlag.for_creator(id).where("created_at > ?", 1.hour.ago).count },
                          :can_approve_posts?, 3.days)
-    create_user_throttle(:ticket, ->{ Danbooru.config.ticket_limit - Ticket.for_creator(id).where("created_at > ?", 1.hour.ago).count },
+    create_user_throttle(:ticket, ->{ YiffyAPI.config.ticket_limit - Ticket.for_creator(id).where("created_at > ?", 1.hour.ago).count },
                          :general_bypass_throttle?, 3.days)
-    create_user_throttle(:suggest_tag, -> { Danbooru.config.tag_suggestion_limit - (TagAlias.for_creator(id).where("created_at > ?", 1.hour.ago).count + TagImplication.for_creator(id).where("created_at > ?", 1.hour.ago).count + BulkUpdateRequest.for_creator(id).where("created_at > ?", 1.hour.ago).count) },
+    create_user_throttle(:suggest_tag, -> { YiffyAPI.config.tag_suggestion_limit - (TagAlias.for_creator(id).where("created_at > ?", 1.hour.ago).count + TagImplication.for_creator(id).where("created_at > ?", 1.hour.ago).count + BulkUpdateRequest.for_creator(id).where("created_at > ?", 1.hour.ago).count) },
                          :is_janitor?, 7.days)
-    create_user_throttle(:forum_vote, -> { Danbooru.config.forum_vote_limit - ForumPostVote.by(id).where("created_at > ?", 1.hour.ago).count },
+    create_user_throttle(:forum_vote, -> { YiffyAPI.config.forum_vote_limit - ForumPostVote.by(id).where("created_at > ?", 1.hour.ago).count },
                          :is_janitor?, 3.days)
 
     def can_remove_from_pools?
@@ -549,15 +549,15 @@ class User < ApplicationRecord
     end
 
     def can_upload_with_reason
-      if hourly_upload_limit <= 0 && !Danbooru.config.disable_throttles?
+      if hourly_upload_limit <= 0 && !YiffyAPI.config.disable_throttles?
         :REJ_UPLOAD_HOURLY
       elsif can_upload_free? || is_admin?
           true
       elsif younger_than(7.days)
         :REJ_UPLOAD_NEWBIE
-      elsif !is_privileged? && post_edit_limit <= 0 && !Danbooru.config.disable_throttles?
+      elsif !is_privileged? && post_edit_limit <= 0 && !YiffyAPI.config.disable_throttles?
         :REJ_UPLOAD_EDIT
-      elsif upload_limit <= 0 && !Danbooru.config.disable_throttles?
+      elsif upload_limit <= 0 && !YiffyAPI.config.disable_throttles?
         :REJ_UPLOAD_LIMIT
       else
         true
@@ -565,7 +565,7 @@ class User < ApplicationRecord
     end
 
     def hourly_upload_limit
-      Danbooru.config.hourly_upload_limit - Post.for_user(id).where("created_at >= ?", 1.hour.ago).count
+      YiffyAPI.config.hourly_upload_limit - Post.for_user(id).where("created_at >= ?", 1.hour.ago).count
     end
     memoize :hourly_upload_limit
 
@@ -600,7 +600,7 @@ class User < ApplicationRecord
     memoize :post_upload_throttle
 
     def tag_query_limit
-      Danbooru.config.tag_query_limit
+      YiffyAPI.config.tag_query_limit
     end
 
     def favorite_limit
@@ -907,7 +907,7 @@ class User < ApplicationRecord
     self.last_ip_addr ||= CurrentUser.ip_addr
 
     return if Rails.env.test?
-    Danbooru.config.customize_new_user(self)
+    YiffyAPI.config.customize_new_user(self)
   end
 
   def presenter

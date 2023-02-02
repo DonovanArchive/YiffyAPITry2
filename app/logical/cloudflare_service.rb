@@ -1,7 +1,7 @@
 module CloudflareService
   def self.ips(expiry: 24.hours)
     text, code = Cache.fetch("cloudflare_ips", expiry) do
-      resp = HTTParty.get("https://api.cloudflare.com/client/v4/ips", Danbooru.config.httparty_options)
+      resp = HTTParty.get("https://api.cloudflare.com/client/v4/ips", YiffyAPI.config.httparty_options)
       [resp.body, resp.code]
     end
     return [] if code != 200

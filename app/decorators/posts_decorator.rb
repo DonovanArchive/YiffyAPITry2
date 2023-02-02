@@ -46,13 +46,13 @@ class PostsDecorator < ApplicationDecorator
   end
 
   def cropped_url(options)
-    cropped_url = if Danbooru.config.enable_image_cropping? && options[:show_cropped] && object.has_cropped? && !CurrentUser.user.disable_cropped_thumbnails?
+    cropped_url = if YiffyAPI.config.enable_image_cropping? && options[:show_cropped] && object.has_cropped? && !CurrentUser.user.disable_cropped_thumbnails?
                     object.crop_file_url
                   else
                     object.preview_file_url
                   end
 
-    cropped_url = Danbooru.config.deleted_preview_url if object.deleteblocked?
+    cropped_url = YiffyAPI.config.deleted_preview_url if object.deleteblocked?
     cropped_url
   end
 
@@ -121,15 +121,15 @@ class PostsDecorator < ApplicationDecorator
     end
     tooltip += "\n\n#{post.tag_string}"
 
-    cropped_url = if Danbooru.config.enable_image_cropping? && options[:show_cropped] && post.has_cropped? && !CurrentUser.user.disable_cropped_thumbnails?
+    cropped_url = if YiffyAPI.config.enable_image_cropping? && options[:show_cropped] && post.has_cropped? && !CurrentUser.user.disable_cropped_thumbnails?
                              post.crop_file_url
                            else
                              post.preview_file_url
                            end
 
-    cropped_url = Danbooru.config.deleted_preview_url if post.deleteblocked?
+    cropped_url = YiffyAPI.config.deleted_preview_url if post.deleteblocked?
     preview_url = if post.deleteblocked?
-                             Danbooru.config.deleted_preview_url
+                             YiffyAPI.config.deleted_preview_url
                            else
                              post.preview_file_url
                            end

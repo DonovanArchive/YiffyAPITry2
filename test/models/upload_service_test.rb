@@ -213,7 +213,7 @@ class UploadServiceTest < ActiveSupport::TestCase
 
     context "that is too large" do
       setup do
-        Danbooru.config.stubs(:max_image_resolution).returns(31 * 31)
+        YiffyAPI.config.stubs(:max_image_resolution).returns(31 * 31)
       end
 
       should "should fail validation" do

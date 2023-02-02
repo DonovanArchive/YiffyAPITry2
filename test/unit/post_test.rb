@@ -105,7 +105,7 @@ class PostTest < ActiveSupport::TestCase
 
     context "Deleting a post" do
       setup do
-        Danbooru.config.stubs(:blank_tag_search_fast_count).returns(nil)
+        YiffyAPI.config.stubs(:blank_tag_search_fast_count).returns(nil)
       end
 
       context "that is status locked" do
@@ -1926,8 +1926,8 @@ class PostTest < ActiveSupport::TestCase
     should "not count free tags against the user's search limit" do
       post1 = create(:post, tag_string: "aaa bbb rating:s")
 
-      Danbooru.config.expects(:is_unlimited_tag?).with("rating:s").once.returns(true)
-      Danbooru.config.expects(:is_unlimited_tag?).with(anything).twice.returns(false)
+      YiffyAPI.config.expects(:is_unlimited_tag?).with("rating:s").once.returns(true)
+      YiffyAPI.config.expects(:is_unlimited_tag?).with(anything).twice.returns(false)
       assert_tag_match([post1], "aaa bbb rating:s")
     end
 
@@ -2204,10 +2204,10 @@ class PostTest < ActiveSupport::TestCase
     should "generate the correct urls for animated gifs" do
       @post = build(:post, md5: "deadbeef", file_ext: "gif", tag_string: "animated_gif")
 
-      assert_equal("#{Danbooru.config.hostname}/data/preview/deadbeef.jpg", @post.preview_file_url)
+      assert_equal("#{YiffyAPI.config.hostname}/data/preview/deadbeef.jpg", @post.preview_file_url)
 
-      assert_equal("#{Danbooru.config.hostname}/data/deadbeef.gif", @post.large_file_url)
-      assert_equal("#{Danbooru.config.hostname}/data/deadbeef.gif", @post.file_url)
+      assert_equal("#{YiffyAPI.config.hostname}/data/deadbeef.gif", @post.large_file_url)
+      assert_equal("#{YiffyAPI.config.hostname}/data/deadbeef.gif", @post.file_url)
     end
   end
 

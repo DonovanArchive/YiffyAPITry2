@@ -1,4 +1,4 @@
-module Danbooru
+module YiffyAPI
   module HasBitFlags
     extend ActiveSupport::Concern
 

@@ -10,8 +10,8 @@ class DeletedPostsController < ApplicationController
     else
       @posts = PostFlag.where(is_deletion: true).includes(post: [:uploader, :flags]).order(id: :desc).paginate(params[:page])
       new_opts = {mode: :numbered, per_page: @posts.records_per_page, total: @posts.total_count, current_page: params[:page].to_i || 1}
-      @posts = ::Danbooru::Paginator::PaginatedArray.new(@posts.map {|f| f.post},
-                                                new_opts
+      @posts = ::YiffyAPI::Paginator::PaginatedArray.new(@posts.map {|f| f.post},
+                                                         new_opts
       )
     end
   end

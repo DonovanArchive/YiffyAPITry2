@@ -10,7 +10,7 @@
     </div>
 
     <%= f.simple_fields_for :original_post do |pf| %>
-      <%= pf.input :body, as: :dtext, limit: Danbooru.config.forum_post_max_size %>
+      <%= pf.input :body, as: :dtext, limit: YiffyAPI.config.forum_post_max_size %>
     <% end %>
 
     <% if CurrentUser.is_moderator? %>

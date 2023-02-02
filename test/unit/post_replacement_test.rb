@@ -12,20 +12,20 @@ class PostReplacementTest < ActiveSupport::TestCase
 
   context "User Limits:" do
     should "fail on too many per post in one day" do
-      Danbooru.config.stubs(:post_replacement_per_day_limit).returns(-1)
+      YiffyAPI.config.stubs(:post_replacement_per_day_limit).returns(-1)
       @replacement = @post.replacements.create(attributes_for(:png_replacement).merge(creator: @user))
       assert_equal ['Creator has already suggested too many replacements for this post today'], @replacement.errors.full_messages
     end
 
     should "fail on too many per post total" do
-      Danbooru.config.stubs(:post_replacement_per_post_limit).returns(-1)
+      YiffyAPI.config.stubs(:post_replacement_per_post_limit).returns(-1)
       @replacement = @post.replacements.create(attributes_for(:png_replacement).merge(creator: @user))
       assert_equal ['Creator has already suggested too many total replacements for this post'], @replacement.errors.full_messages
     end
 
     should "fail if user has no remaining upload limit" do
       User.any_instance.stubs(:upload_limit).returns(0)
-      Danbooru.config.stubs(:disable_throttles?).returns(false)
+      YiffyAPI.config.stubs(:disable_throttles?).returns(false)
       @replacement = @post.replacements.create(attributes_for(:png_replacement).merge(creator: @user))
       assert_equal ['Creator have reached your upload limit'], @replacement.errors.full_messages
     end
@@ -64,13 +64,13 @@ class PostReplacementTest < ActiveSupport::TestCase
     end
 
     should "not allow files that are too large" do
-      Danbooru.config.stubs(:max_file_sizes).returns({ "png" => 0 })
+      YiffyAPI.config.stubs(:max_file_sizes).returns({ "png" => 0 })
       @replacement = @post.replacements.create(attributes_for(:png_replacement).merge(creator: @user))
       assert_match(/File size is too large/, @replacement.errors.full_messages.join)
     end
 
     should "not allow an apng that is too large" do
-      Danbooru.config.stubs(:max_apng_file_size).returns(0)
+      YiffyAPI.config.stubs(:max_apng_file_size).returns(0)
       @replacement = @post.replacements.create(attributes_for(:apng_replacement).merge(creator: @user))
       assert_match(/File size is too large/, @replacement.errors.full_messages.join)
     end
@@ -158,7 +158,7 @@ class PostReplacementTest < ActiveSupport::TestCase
     end
 
     should "delete original files immediately" do
-      sm = Danbooru.config.storage_manager
+      sm = YiffyAPI.config.storage_manager
       old_md5 = @post.md5
       old_ext = @post.file_ext
       @replacement.approve! penalize_current_uploader: true

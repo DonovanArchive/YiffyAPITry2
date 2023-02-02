@@ -15,7 +15,7 @@ class UploadService
                                      image_width: post.image_width, image_height: post.image_height, file_ext: post.file_ext,
                                      file_size: post.file_size, md5: post.md5, file_name: "#{post.md5}.#{post.file_ext}",
                                      source: post.source, reason: 'Backup of original file', is_backup: true)
-        repl.replacement_file = Danbooru.config.storage_manager.open(Danbooru.config.storage_manager.file_path(post, post.file_ext, :original))
+        repl.replacement_file = YiffyAPI.config.storage_manager.open(YiffyAPI.config.storage_manager.file_path(post, post.file_ext, :original))
         repl.save
       rescue Exception => e
         raise ProcessingError, "Failed to create post file backup: #{e.message}"
@@ -29,7 +29,7 @@ class UploadService
 
       create_backup_replacement
       PostReplacement.transaction do
-        replacement.replacement_file = Danbooru.config.storage_manager.open(Danbooru.config.storage_manager.replacement_path(replacement, replacement.file_ext, :original))
+        replacement.replacement_file = YiffyAPI.config.storage_manager.open(YiffyAPI.config.storage_manager.replacement_path(replacement, replacement.file_ext, :original))
 
         upload = Upload.create(
           uploader_id: CurrentUser.id,

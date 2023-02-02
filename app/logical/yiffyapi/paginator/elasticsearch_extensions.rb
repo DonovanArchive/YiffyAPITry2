@@ -1,4 +1,4 @@
-module Danbooru
+module YiffyAPI
   module Paginator
     class PaginatedArray < Array
       attr_internal_accessor :records_per_page, :total_count, :sequential_paginator_mode, :current_page, :orig_size
@@ -7,7 +7,7 @@ module Danbooru
         @_current_page = options[:current_page]
         @_records_per_page = options[:per_page]
         @_total_count = options[:total]
-        @_max_numbered_pages = options[:max_numbered_pages] || Danbooru.config.max_numbered_pages
+        @_max_numbered_pages = options[:max_numbered_pages] || YiffyAPI.config.max_numbered_pages
         real_array = orig_array || []
         @_orig_size = real_array.size
         if options[:mode] == :sequential

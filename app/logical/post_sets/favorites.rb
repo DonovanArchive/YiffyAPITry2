@@ -21,8 +21,8 @@ module PostSets
       @posts ||= begin
                    favs = ::Favorite.for_user(@user.id).includes(:post).order(created_at: :desc).paginate(page, exact_count: @post_count, limit: @limit)
                    new_opts = {mode: :numbered, per_page: favs.records_per_page, total: @post_count, current_page: current_page}
-                   ::Danbooru::Paginator::PaginatedArray.new(favs.map {|f| f.post},
-                                                           new_opts
+                   ::YiffyAPI::Paginator::PaginatedArray.new(favs.map {|f| f.post},
+                                                             new_opts
                                                            )
                  end
     end

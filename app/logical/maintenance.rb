@@ -2,7 +2,7 @@ module Maintenance
   module_function
 
   def daily
-    return if Danbooru.config.readonly_mode?
+    return if YiffyAPI.config.readonly_mode?
 
     ignoring_exceptions { PostPruner.new.prune! }
     ignoring_exceptions { Upload.where('created_at < ?', 1.week.ago).delete_all }

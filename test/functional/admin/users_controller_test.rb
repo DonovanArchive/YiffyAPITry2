@@ -32,7 +32,7 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
       context "on an user with a blank email" do
         setup do
           @user = create(:user, email: "")
-          Danbooru.config.stubs(:enable_email_verification?).returns(true)
+          YiffyAPI.config.stubs(:enable_email_verification?).returns(true)
         end
 
         should "succeed" do

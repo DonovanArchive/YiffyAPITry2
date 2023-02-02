@@ -10,7 +10,7 @@ class PostVideoConversionJob
 
   def move_videos(post, samples)
     md5 = post.md5
-    sm = Danbooru.config.storage_manager
+    sm = YiffyAPI.config.storage_manager
     samples.each do |name, named_samples|
       next if name == :original
       webm_path = sm.file_path(md5, 'webm', :scaled, post.is_deleted?, scale_factor: name.to_s)
@@ -28,7 +28,7 @@ class PostVideoConversionJob
 
   def generate_video_samples(post)
     outputs = {}
-    Danbooru.config.video_rescales.each do |size, dims|
+    YiffyAPI.config.video_rescales.each do |size, dims|
       next if post.image_width <= dims[0] && post.image_height <= dims[1]
       scaled_dims = post.scaled_sample_dimensions(dims)
       outputs[size] = generate_scaled_video(post.file_path, scaled_dims)
@@ -124,7 +124,7 @@ class PostVideoConversionJob
     if format != :webm
       args += mp4_args
     end
-    stdout, stderr, status = Open3.capture3(Danbooru.config.ffmpeg_path, *args)
+    stdout, stderr, status = Open3.capture3(YiffyAPI.config.ffmpeg_path, *args)
 
     unless status == 0
       logger.warn("[FFMPEG TRANSCODE STDOUT] #{stdout.chomp}")

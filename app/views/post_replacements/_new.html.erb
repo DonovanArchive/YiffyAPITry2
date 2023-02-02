@@ -1,6 +1,6 @@
 <div class="replace-image-dialog-body">
   <div class="dtext-container">
-    <%= format_text(WikiPage.titled(Danbooru.config.replacement_notice_wiki_page).first.try(&:body)) %>
+    <%= format_text(WikiPage.titled(YiffyAPI.config.replacement_notice_wiki_page).first.try(&:body)) %>
   </div>
 
   <div>
@@ -15,7 +15,7 @@
 
 <%= javascript_tag nonce: true do -%>
   var uploaderSettings = {
-    maxFileSize: <%= Danbooru.config.max_file_size %>,
+    maxFileSize: <%= YiffyAPI.config.max_file_size %>,
   };
   Danbooru.Replacer.init();
 <% end -%>

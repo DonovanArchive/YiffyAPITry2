@@ -59,7 +59,7 @@ class UploadWhitelist < ApplicationRecord
       all
     end
 
-    if Danbooru.config.bypass_upload_whitelist?(CurrentUser)
+    if YiffyAPI.config.bypass_upload_whitelist?(CurrentUser)
       return [true, 'bypassed']
     end
 

@@ -20,7 +20,7 @@ Shoulda::Matchers.configure do |config|
 end
 
 WebMock.disable_net_connect!(allow: [
-  Danbooru.config.elasticsearch_host,
+  YiffyAPI.config.elasticsearch_host,
 ])
 
 FactoryBot::SyntaxRunner.class_eval do
@@ -35,14 +35,14 @@ class ActiveSupport::TestCase
 
   setup do
     Socket.stubs(:gethostname).returns("www.example.com")
-    Danbooru.config.stubs(:enable_sock_puppet_validation?).returns(false)
-    Danbooru.config.stubs(:disable_throttles?).returns(true)
+    YiffyAPI.config.stubs(:enable_sock_puppet_validation?).returns(false)
+    YiffyAPI.config.stubs(:disable_throttles?).returns(true)
 
     FileUtils.mkdir_p("#{Rails.root}/tmp/test-storage2")
     storage_manager = StorageManager::Local.new(base_dir: "#{Rails.root}/tmp/test-storage2")
-    Danbooru.config.stubs(:storage_manager).returns(storage_manager)
-    Danbooru.config.stubs(:backup_storage_manager).returns(StorageManager::Null.new)
-    Danbooru.config.stubs(:enable_email_verification?).returns(false)
+    YiffyAPI.config.stubs(:storage_manager).returns(storage_manager)
+    YiffyAPI.config.stubs(:backup_storage_manager).returns(StorageManager::Null.new)
+    YiffyAPI.config.stubs(:enable_email_verification?).returns(false)
     CurrentUser.ip_addr = "127.0.0.1"
   end
 

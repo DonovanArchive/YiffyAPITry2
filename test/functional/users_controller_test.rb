@@ -62,7 +62,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
     context "new action" do
       setup do
-        Danbooru.config.stubs(:enable_recaptcha?).returns(false)
+        YiffyAPI.config.stubs(:enable_recaptcha?).returns(false)
       end
 
       should "render" do
@@ -81,7 +81,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
       context "with sockpuppet validation enabled" do
         setup do
-          Danbooru.config.unstub(:enable_sock_puppet_validation?)
+          YiffyAPI.config.unstub(:enable_sock_puppet_validation?)
           @user.update(last_ip_addr: "127.0.0.1")
         end
 
@@ -107,7 +107,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
       context "with email validation" do
         setup do
-          Danbooru.config.stubs(:enable_email_verification?).returns(true)
+          YiffyAPI.config.stubs(:enable_email_verification?).returns(true)
         end
 
         should "reject invalid emails" do
@@ -167,7 +167,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
       context "for an user with blank email" do
         setup do
           @user = create(:user, email: "")
-          Danbooru.config.stubs(:enable_email_verification?).returns(true)
+          YiffyAPI.config.stubs(:enable_email_verification?).returns(true)
         end
 
         should "force them to update their email" do

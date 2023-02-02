@@ -18,7 +18,7 @@ module DanbooruImageResizer
   end
 
   def crop(file, width, height, resize_quality = 90)
-    return nil unless Danbooru.config.enable_image_cropping?
+    return nil unless YiffyAPI.config.enable_image_cropping?
 
     output_file = Tempfile.new
     resized_image = thumbnail(file, width, height, CROP_OPTIONS)

@@ -119,7 +119,7 @@ class ForumTopicTest < ActiveSupport::TestCase
 
     should "be searchable by category id" do
       assert_equal(0, ForumTopic.search(:category_id => 0).count)
-      assert_equal(1, ForumTopic.search(:category_id => Danbooru.config.alias_implication_forum_category).count)
+      assert_equal(1, ForumTopic.search(:category_id => YiffyAPI.config.alias_implication_forum_category).count)
     end
 
     should "initialize its creator" do

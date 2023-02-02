@@ -14,8 +14,8 @@ class PostFlagTest < ActiveSupport::TestCase
 
     should "respect the throttle limit" do
       as(@bob) do
-        Danbooru.config.stubs(:disable_throttles?).returns(false)
-        Danbooru.config.stubs(:post_flag_limit).returns(0)
+        YiffyAPI.config.stubs(:disable_throttles?).returns(false)
+        YiffyAPI.config.stubs(:post_flag_limit).returns(0)
 
         error = assert_raises(ActiveRecord::RecordInvalid) do
           @post_flag = create(:post_flag, post: @post)

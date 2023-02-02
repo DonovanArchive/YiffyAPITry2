@@ -1,7 +1,7 @@
 class Dmail < ApplicationRecord
   validates :title, :body, presence: { on: :create }
   validates :title, length: { minimum: 1, maximum: 250 }
-  validates :body, length: { minimum: 1, maximum: Danbooru.config.dmail_max_size }
+  validates :body, length: { minimum: 1, maximum: YiffyAPI.config.dmail_max_size }
   validate :sender_is_not_banned, on: :create
   validate :recipient_accepts_dmails, on: :create
   validate :user_not_limited, on: :create
@@ -216,7 +216,7 @@ class Dmail < ApplicationRecord
   end
 
   def mark_as_read!
-    return if Danbooru.config.readonly_mode?
+    return if YiffyAPI.config.readonly_mode?
 
     update_column(:is_read, true)
     owner.dmails.unread.count.tap do |unread_count|

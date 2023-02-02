@@ -1,4 +1,4 @@
-module Danbooru
+module YiffyAPI
   module Paginator
     module SequentialCollectionExtension
       attr_accessor :sequential_paginator_mode

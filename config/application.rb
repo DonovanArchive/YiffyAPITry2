@@ -18,12 +18,12 @@ require "rails/test_unit/railtie"
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
-require_relative "danbooru_default_config"
-require_relative "danbooru_local_config"
+require_relative "yiffyapi_default_config"
+require_relative "yiffyapi_local_config"
 
 require 'elasticsearch/rails/instrumentation'
 
-module Danbooru
+module YiffyAPI
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 7.0
@@ -33,8 +33,8 @@ module Danbooru
     config.force_ssl = true
     config.active_job.queue_adapter = :sidekiq
 
-    if Rails.env.production? && Danbooru.config.ssl_options.present?
-      config.ssl_options = Danbooru.config.ssl_options
+    if Rails.env.production? && YiffyAPI.config.ssl_options.present?
+      config.ssl_options = YiffyAPI.config.ssl_options
     else
       config.ssl_options = {
         hsts: false,
@@ -53,7 +53,7 @@ module Danbooru
 
     config.after_initialize do
       Rails.application.routes.default_url_options = {
-        host: Danbooru.config.hostname,
+        host: YiffyAPI.config.hostname,
       }
     end
 

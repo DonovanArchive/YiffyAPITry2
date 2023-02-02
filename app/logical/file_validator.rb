@@ -6,7 +6,7 @@ class FileValidator
     @file_path = file_path
   end
 
-  def validate(max_file_sizes: Danbooru.config.max_file_sizes, max_width: Danbooru.config.max_image_width, max_height: Danbooru.config.max_image_height)
+  def validate(max_file_sizes: YiffyAPI.config.max_file_sizes, max_width: YiffyAPI.config.max_image_width, max_height: YiffyAPI.config.max_image_height)
     validate_file_ext(max_file_sizes)
     validate_file_size(max_file_sizes)
     validate_file_integrity
@@ -41,16 +41,16 @@ class FileValidator
     if record.file_size > max_size
       record.errors.add(:file_size, "is too large. Maximum allowed for this file type is #{ApplicationController.helpers.number_to_human_size(max_size)}")
     end
-    if record.is_animated_png?(file_path) && record.file_size > Danbooru.config.max_apng_file_size
-      record.errors.add(:file_size, "is too large. Maximum allowed for this file type is #{ApplicationController.helpers.number_to_human_size(Danbooru.config.max_apng_file_size)}")
+    if record.is_animated_png?(file_path) && record.file_size > YiffyAPI.config.max_apng_file_size
+      record.errors.add(:file_size, "is too large. Maximum allowed for this file type is #{ApplicationController.helpers.number_to_human_size(YiffyAPI.config.max_apng_file_size)}")
     end
   end
 
   def validate_resolution(max_width, max_height)
     resolution = record.image_width.to_i * record.image_height.to_i
 
-    if resolution > Danbooru.config.max_image_resolution
-      record.errors.add(:base, "image resolution is too large (resolution: #{(resolution / 1_000_000.0).round(1)} megapixels (#{record.image_width}x#{record.image_height}); max: #{Danbooru.config.max_image_resolution / 1_000_000} megapixels)")
+    if resolution > YiffyAPI.config.max_image_resolution
+      record.errors.add(:base, "image resolution is too large (resolution: #{(resolution / 1_000_000.0).round(1)} megapixels (#{record.image_width}x#{record.image_height}); max: #{YiffyAPI.config.max_image_resolution / 1_000_000} megapixels)")
     elsif record.image_width > max_width
       record.errors.add(:image_width, "is too large (width: #{record.image_width}; max width: #{max_width})")
     elsif record.image_height > max_height
@@ -59,8 +59,8 @@ class FileValidator
   end
 
   def validate_duration(video)
-    if video.duration > Danbooru.config.max_video_duration
-      record.errors.add(:base, "video must not be longer than #{Danbooru.config.max_video_duration} seconds")
+    if video.duration > YiffyAPI.config.max_video_duration
+      record.errors.add(:base, "video must not be longer than #{YiffyAPI.config.max_video_duration} seconds")
     end
   end
 

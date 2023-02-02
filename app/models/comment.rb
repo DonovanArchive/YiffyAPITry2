@@ -7,7 +7,7 @@ class Comment < ApplicationRecord
   validate :validate_creator_is_not_limited, on: :create
   validate :post_not_comment_disabled, on: :create
   validates :body, presence: { message: "has no content" }
-  validates :body, length: { minimum: 1, maximum: Danbooru.config.comment_max_size }
+  validates :body, length: { minimum: 1, maximum: YiffyAPI.config.comment_max_size }
 
   after_create :update_last_commented_at_on_create
   after_update(if: ->(rec) { !rec.saved_change_to_is_hidden? && CurrentUser.id != rec.creator_id }) do |rec|
@@ -145,7 +145,7 @@ class Comment < ApplicationRecord
     post = Post.find(post_id)
     return unless post
     post.update_column(:last_commented_at, created_at)
-    if Comment.where("post_id = ?", post_id).count <= Danbooru.config.comment_threshold && !do_not_bump_post?
+    if Comment.where("post_id = ?", post_id).count <= YiffyAPI.config.comment_threshold && !do_not_bump_post?
       post.update_column(:last_comment_bumped_at, created_at)
     end
     post.update_index

@@ -1,4 +1,4 @@
-module Danbooru
+module YiffyAPI
   module Paginator
     class PaginationError < Exception
     end

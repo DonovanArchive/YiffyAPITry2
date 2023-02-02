@@ -97,8 +97,8 @@ class ElasticPostQueryBuilder
       q = Tag.parse_query(query_string)
     end
 
-    if q[:tag_count].to_i > Danbooru.config.tag_query_limit
-      raise ::Post::SearchError.new("You cannot search for more than #{Danbooru.config.tag_query_limit} tags at a time")
+    if q[:tag_count].to_i > YiffyAPI.config.tag_query_limit
+      raise ::Post::SearchError.new("You cannot search for more than #{YiffyAPI.config.tag_query_limit} tags at a time")
     end
 
     must = [] # These terms are ANDed together

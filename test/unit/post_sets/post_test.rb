@@ -76,7 +76,7 @@ module PostSets
         end
 
         should "fail" do
-          assert_raises(Danbooru::Paginator::PaginationError) do
+          assert_raises(YiffyAPI::Paginator::PaginationError) do
             @set.posts
           end
         end

@@ -208,7 +208,7 @@ class PoolTest < ActiveSupport::TestCase
 
     context "by changing the category" do
       setup do
-        Danbooru.config.stubs(:pool_category_change_limit).returns(1)
+        YiffyAPI.config.stubs(:pool_category_change_limit).returns(1)
         @pool.add!(@p1)
         @pool.add!(@p2)
       end

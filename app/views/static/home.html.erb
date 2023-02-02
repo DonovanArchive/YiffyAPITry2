@@ -92,7 +92,7 @@
 
     <div id="searchbox" class='mascotbox'>
       <div id="static-index">
-        <h1 style="font-size: 4em;"><%= link_to(Danbooru.config.app_name, "/") %></h1>
+        <h1 style="font-size: 4em;"><%= link_to(YiffyAPI.config.app_name, "/") %></h1>
         <div id="links">
           <% if !CurrentUser.is_anonymous? %>
             <%= link_to "Account", home_users_path, title: "User home" %>

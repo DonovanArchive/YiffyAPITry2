@@ -5,12 +5,11 @@
 </head>
 <%= tag.body **body_attributes(CurrentUser.user) do %>
   <%= render "layouts/theme_include" %>
-  <% if Danbooru.config.beta_notice? %>
+  <% if YiffyAPI.config.is_beta? %>
   <div id="news-updates">
     <ul>
       <li>
-        <h1>Please make sure to check out the <a href="/wiki_pages/e621:beta_rules">beta rules</a> before proceeding
-          to use this site.</h1>
+        <h1>Pardon our dust, this site is currently in <a href="/wiki_pages/beta">beta</a> mode.</h1>
       </li>
     </ul>
   </div>
@@ -30,7 +29,7 @@
   </header>
 
   <div id="page">
-    <% if Danbooru.config.readonly_mode? %>
+    <% if YiffyAPI.config.readonly_mode? %>
       <div id="readonly-notice" class="site-notice">
         <h1>The site is currently in readonly mode.</h1>
       </div>
@@ -62,8 +61,8 @@
     <%= render "static/guest_warning" %>
   <% end %>
   <%= render "static/footer" %>
-  <% if Danbooru.config.enable_visitor_metrics? %>
-    <%= javascript_include_tag "https://plausible.dragonfru.it/js/script.js", nonce: true, defer: true, data: {domain: Danbooru.config.domain} %>
+  <% if YiffyAPI.config.enable_visitor_metrics? %>
+    <%= javascript_include_tag "https://plausible.dragonfru.it/js/script.js", nonce: true, defer: true, data: {domain: YiffyAPI.config.domain} %>
   <% end %>
   <%= render "static/deferred_posts" %>
 <% end %>

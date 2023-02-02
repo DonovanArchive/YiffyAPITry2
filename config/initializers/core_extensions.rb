@@ -1,4 +1,4 @@
-module Danbooru
+module YiffyAPI
   module Extensions
     module String
       def to_escaped_for_sql_like
@@ -32,7 +32,7 @@ module Danbooru
 end
 
 class String
-  include Danbooru::Extensions::String
+  include YiffyAPI::Extensions::String
 end
 
 class FalseClass

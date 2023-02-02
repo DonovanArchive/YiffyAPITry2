@@ -23,7 +23,7 @@
   </div>
 
   <% if @bulk_update_request.new_record? %>
-    <%= f.input :reason, as: :dtext, limit: Danbooru.config.forum_post_max_size %>
+    <%= f.input :reason, as: :dtext, limit: YiffyAPI.config.forum_post_max_size %>
   <% end %>
 
   <% if CurrentUser.is_admin? %>

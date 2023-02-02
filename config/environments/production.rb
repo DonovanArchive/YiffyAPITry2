@@ -50,8 +50,8 @@ Rails.application.configure do
 
   config.action_mailer.delivery_method = :mailgun
   config.action_mailer.mailgun_settings = {
-      api_key: Danbooru.config.mailgun_api_key,
-      domain: Danbooru.config.mailgun_domain
+      api_key: YiffyAPI.config.mailgun_api_key,
+      domain: YiffyAPI.config.mailgun_domain
   }
 
 

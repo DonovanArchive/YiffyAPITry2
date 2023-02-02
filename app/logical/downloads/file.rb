@@ -38,7 +38,7 @@ module Downloads
       errors.add(:base, "'#{url}' is not whitelisted and can't be direct downloaded: #{reason}") if !valid
     end
 
-    def http_get_streaming(url, file: Tempfile.new(binmode: true), max_size: Danbooru.config.max_file_size)
+    def http_get_streaming(url, file: Tempfile.new(binmode: true), max_size: YiffyAPI.config.max_file_size)
       size = 0
 
       res = HTTParty.get(url, httparty_options) do |chunk|
@@ -79,7 +79,7 @@ module Downloads
         stream_body: true,
         headers: strategy.headers,
         connection_adapter: ValidatingConnectionAdapter,
-      }.deep_merge(Danbooru.config.httparty_options)
+      }.deep_merge(YiffyAPI.config.httparty_options)
     end
 
     def is_cloudflare?(url)
@@ -94,7 +94,7 @@ module Downloads
     def self.call(uri, options)
       ip_addr = IPAddr.new(Resolv.getaddress(uri.hostname))
 
-      if Danbooru.config.banned_ip_for_download?(ip_addr)
+      if YiffyAPI.config.banned_ip_for_download?(ip_addr)
         raise Downloads::File::Error, "Downloads from #{ip_addr} are not allowed"
       end
 

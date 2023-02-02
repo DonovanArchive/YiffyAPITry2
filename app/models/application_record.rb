@@ -1,7 +1,7 @@
 class ApplicationRecord < ActiveRecord::Base
   self.abstract_class = true
 
-  include Danbooru::Paginator::ActiveRecordExtension
+  include YiffyAPI::Paginator::ActiveRecordExtension
 
   concerning :SearchMethods do
     class_methods do

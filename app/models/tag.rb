@@ -547,7 +547,7 @@ class Tag < ApplicationRecord
     end
 
     def pull_wildcard_tags(tag)
-      matches = Tag.name_matches(tag).select("name").limit(Danbooru.config.tag_query_limit).order("post_count DESC").map(&:name)
+      matches = Tag.name_matches(tag).select("name").limit(YiffyAPI.config.tag_query_limit).order("post_count DESC").map(&:name)
       matches = ['~~not_found~~'] if matches.empty?
       matches
     end
@@ -624,7 +624,7 @@ class Tag < ApplicationRecord
       end
 
       scan_query(query).each do |token|
-        q[:tag_count] += 1 unless Danbooru.config.is_unlimited_tag?(token)
+        q[:tag_count] += 1 unless YiffyAPI.config.is_unlimited_tag?(token)
 
         if token =~ /\A(#{METATAGS.join("|")}):(.+)\z/i
           g1 = $1.downcase
@@ -702,7 +702,7 @@ class Tag < ApplicationRecord
             elsif g2.downcase == "any"
               q[:pool] = "none"
             elsif g2.include?("*")
-              pool_ids = Pool.search(name_matches: g2, order: "post_count").select(:id).limit(Danbooru.config.tag_query_limit).pluck(:id)
+              pool_ids = Pool.search(name_matches: g2, order: "post_count").select(:id).limit(YiffyAPI.config.tag_query_limit).pluck(:id)
               q[:pools_neg] += pool_ids
             else
               q[:pools_neg] << Pool.name_to_id(g2)
@@ -715,7 +715,7 @@ class Tag < ApplicationRecord
             elsif g2.downcase == "any"
               q[:pool] = "any"
             elsif g2.include?("*")
-              pool_ids = Pool.search(name_matches: g2, order: "post_count").select(:id).limit(Danbooru.config.tag_query_limit).pluck(:id)
+              pool_ids = Pool.search(name_matches: g2, order: "post_count").select(:id).limit(YiffyAPI.config.tag_query_limit).pluck(:id)
               q[:pools] += pool_ids
             else
               q[:pools] << Pool.name_to_id(g2)
@@ -1126,7 +1126,7 @@ class Tag < ApplicationRecord
   def category_editable_by_implicit?(user)
     return false unless user.is_janitor?
     return false if is_locked?
-    return false if post_count >= Danbooru.config.tag_type_change_cutoff
+    return false if post_count >= YiffyAPI.config.tag_type_change_cutoff
     true
   end
 
@@ -1134,7 +1134,7 @@ class Tag < ApplicationRecord
     return true if user.is_moderator?
     return false if is_locked?
     return false if TagCategory.mod_only_mapping[TagCategory.reverse_mapping[category]]
-    return true if post_count < Danbooru.config.tag_type_change_cutoff
+    return true if post_count < YiffyAPI.config.tag_type_change_cutoff
     false
   end
 

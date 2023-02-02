@@ -17,12 +17,12 @@ FileUtils.chdir APP_ROOT do
   unless File.exist?('config/database.yml')
     FileUtils.cp 'docker/database.yml', 'config/database.yml'
   end
-  unless File.exist?('config/danbooru_local_config.rb')
-    FileUtils.cp 'docker/danbooru_local_config.rb', 'config/danbooru_local_config.rb'
+  unless File.exist?('config/yiffyapi_local_config.rb')
+    FileUtils.cp 'docker/yiffyapi_local_config.rb', 'config/yiffyapi_local_config.rb'
   end
 
   puts "\n== Preparing database =="
-  system! 'DANBOORU_DISABLE_THROTTLES=true bin/rails db:prepare'
+  system! 'YIFFYAPI_DISABLE_THROTTLES=true bin/rails db:prepare'
 
   puts "\n== Preparing search indices =="
   system! 'bin/rails r Post.__elasticsearch__.create_index!'

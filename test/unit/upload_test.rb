@@ -12,7 +12,7 @@ class UploadTest < ActiveSupport::TestCase
         setup do
           CurrentUser.user = create(:user, created_at: 1.year.ago)
           User.any_instance.stubs(:upload_limit).returns(0)
-          Danbooru.config.stubs(:disable_throttles?).returns(false)
+          YiffyAPI.config.stubs(:disable_throttles?).returns(false)
         end
 
         should "fail creation" do

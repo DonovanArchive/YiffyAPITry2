@@ -1,15 +1,16 @@
-require 'socket'
+# typed: true
+require "socket"
 
-module Danbooru
+module YiffyAPI
   class Configuration
-    # The version of this Danbooru.
+    # The version of this YiffyAPI instance.
     def version
-      "2.1.0"
+      "1.0.0"
     end
 
-    # The name of this Danbooru.
+    # The name of this YiffyAPI instance.
     def app_name
-      "e621"
+      "YiffyAPI"
     end
 
     def description
@@ -17,7 +18,7 @@ module Danbooru
     end
 
     def domain
-      "e621.net"
+      "yiff.rest"
     end
 
     # Force rating:s on this version of the site.
@@ -48,11 +49,15 @@ module Danbooru
     #
     # Run `rake db:seed` to create this account if it doesn't already exist in your install.
     def system_user
-      "auto_moderator"
+      "System"
     end
 
     def source_code_url
-      "https://github.com/e621ng/e621ng"
+      "https://github.com/DonovanDMC/YiffyAPI"
+    end
+
+    def session_cookie_name
+      "_yiffyapi_session"
     end
 
     def commit_url(hash)
@@ -71,15 +76,16 @@ module Danbooru
 
     def levels
       {
-          "Anonymous" => 0,
-          "Blocked" => 10,
-          "Member" => 20,
-          "Privileged" => 30,
-          "Contributor" => 33,
-          "Former Staff" => 34,
-          "Janitor" => 35,
-          "Moderator" => 40,
-          "Admin" => 50
+        "Anonymous" => 0,
+        "Blocked" => 10,
+        "Member" => 20,
+        "Privileged" => 30,
+        "Contributor" => 33,
+        "Former Staff" => 34,
+        "Janitor" => 35,
+        "System" => 36,
+        "Moderator" => 40,
+        "Admin" => 50,
       }
     end
 
@@ -89,7 +95,7 @@ module Danbooru
       user.comment_threshold = -10
       user.enable_auto_complete = true
       user.enable_keyboard_navigation = true
-      user.per_page = 75
+      user.per_page = 100
       user.show_post_statistics = true
       user.style_usernames = true
     end
@@ -145,7 +151,7 @@ module Danbooru
 
     # List of memcached servers
     def memcached_servers
-      %w(127.0.0.1:11211)
+      %w[127.0.0.1:11211]
     end
 
     def alias_implication_forum_category
@@ -327,8 +333,16 @@ module Danbooru
       250_000
     end
 
-    def beta_notice?
-      false
+    def artist_url_max_length
+      4096
+    end
+
+    def dmail_max_title_length
+      250
+    end
+
+    def is_beta?
+      true
     end
 
     def discord_site
@@ -345,12 +359,24 @@ module Danbooru
       100.megabytes
     end
 
+    def min_file_size
+      16
+    end
+
     def max_file_sizes
       {
-        'jpg' => 100.megabytes,
-        'png' => 100.megabytes,
-        'gif' => 20.megabytes,
-        'webm' => 100.megabytes
+        "jpg" => 100.megabytes,
+        "png" => 100.megabytes,
+        "webp" => 100.megabytes,
+        "gif" => 20.megabytes,
+        "webm" => 100.megabytes,
+      }
+    end
+
+    def max_mascot_file_sizes
+      {
+        "png" => 1.megabyte,
+        "jpg" => 1.megabyte,
       }
     end
 
@@ -365,17 +391,25 @@ module Danbooru
 
     # Maximum resolution (width * height) of an upload. Default: 441 megapixels (21000x21000 pixels).
     def max_image_resolution
-      15000 * 15000
+      15_000 * 15_000
     end
 
     # Maximum width of an upload.
     def max_image_width
-      15000
+      15_000
     end
 
     # Maximum height of an upload.
     def max_image_height
-      15000
+      15_000
+    end
+
+    def max_mascot_width
+      1000
+    end
+
+    def max_mascot_height
+      1000
     end
 
     def max_tags_per_post
@@ -404,7 +438,7 @@ module Danbooru
       # base_url - where to serve files from (default: http://#{hostname}/data)
       # hierarchical: false - store files in a single directory
       # hierarchical: true - store files in a hierarchical directory structure, based on the MD5 hash
-      StorageManager::Local.new(base_dir: "#{Rails.root}/public/data", hierarchical: true)
+      StorageManager::Local.new(base_dir: Rails.root.join("public", "data"), hierarchical: true)
 
       # Select the storage method based on the post's id and type (preview, large, or original).
       # StorageManager::Hybrid.new do |id, md5, file_ext, type|
@@ -425,111 +459,104 @@ module Danbooru
       # StorageManager::Local.new(base_dir: "/mnt/backup", hierarchical: false)
     end
 
-#TAG CONFIGURATION
-
-    #Full tag configuration info for all tags
-    def full_tag_config_info
+    def full_tag_category_mapping
       @full_tag_category_mapping ||= {
         "general" => {
           "category" => 0,
           "short" => "gen",
           "extra" => [],
-          "header" => 'General',
+          "header" => "General",
           "humanized" => nil,
-          "mod_only" => false,
+          "restricted" => false,
         },
         "species" => {
           "category" => 5,
           "short" => "spec",
           "extra" => [],
-          "header" => 'Species',
+          "header" => "Species",
           "humanized" => nil,
-          "mod_only" => false,
+          "restricted" => false,
         },
         "character" => {
           "category" => 4,
           "short" => "char",
-          "extra" => ["ch", "oc"],
-          "header" => 'Characters',
+          "extra" => %w[ch oc],
+          "header" => "Characters",
           "humanized" => {
             "slice" => 5,
             "exclusion" => [],
             "regexmap" => /^(.+?)(?:_\(.+\))?$/,
-            "formatstr" => "%s"
+            "formatstr" => "%s",
           },
-          "mod_only" => false,
+          "restricted" => false,
         },
         "copyright" => {
           "category" => 3,
           "short" => "copy",
           "extra" => ["co"],
-          "header" => 'Copyrights',
+          "header" => "Copyrights",
           "humanized" => {
             "slice" => 1,
             "exclusion" => [],
             "regexmap" => //,
-            "formatstr" => "(%s)"
+            "formatstr" => "(%s)",
           },
-          "mod_only" => false,
+          "restricted" => false,
         },
         "artist" => {
           "category" => 1,
           "short" => "art",
           "extra" => [],
-          "header" => 'Artists',
+          "header" => "Artists",
           "humanized" => {
             "slice" => 0,
-            "exclusion" => %w(avoid_posting conditional_dnp),
+            "exclusion" => %w[avoid_posting conditional_dnp],
             "regexmap" => //,
-            "formatstr" => "created by %s"
+            "formatstr" => "created by %s",
           },
-          "mod_only" => false,
+          "restricted" => false,
         },
         "invalid" => {
           "category" => 6,
           "short" => "inv",
           "extra" => [],
-          "header" => 'Invalid',
+          "header" => "Invalid",
           "humanized" => nil,
-          "mod_only" => true,
+          "restricted" => true,
         },
         "lore" => {
           "category" => 8,
-          "short" => 'lor',
-          'extra' => [],
-          'header' => 'Lore',
-          'humanized' => nil,
-          'mod_only' => true,
+          "short" => "lor",
+          "extra" => [],
+          "header" => "Lore",
+          "humanized" => nil,
+          "restricted" => true,
         },
         "meta" => {
           "category" => 7,
           "short" => "meta",
           "extra" => [],
-          "header" => 'Meta',
+          "header" => "Meta",
           "humanized" => nil,
-          "mod_only" => true,
-        }
+          "restricted" => true,
+        },
       }
     end
 
-#TAG ORDERS
-
-    #Sets the order of the humanized essential tag string (models/post.rb)
+    # Sets the order of the humanized essential tag string (models/post.rb)
     def humanized_tag_category_list
-      @humanized_tag_category_list ||= ["character","copyright","artist"]
+      @humanized_tag_category_list ||= %w[character copyright artist]
     end
 
-    #Sets the order of the split tag header list (presenters/tag_set_presenter.rb)
+    # Sets the order of the split tag header list (presenters/tag_set_presenter.rb)
     def split_tag_header_list
-      @split_tag_header_list ||= ["invalid","artist","copyright","character","species","general","meta","lore"]
+      @split_tag_header_list ||= %w[invalid artist copyright character species general meta lore]
     end
 
-    #Sets the order of the categorized tag string (presenters/post_presenter.rb)
+    # Sets the order of the categorized tag string (presenters/post_presenter.rb)
     def categorized_tag_list
-      @categorized_tag_list ||= ["invalid","artist","copyright","character","species","meta","general","lore"]
+      @categorized_tag_list ||= %w[invalid artist copyright character species meta general lore]
     end
-
-#END TAG
 
     # If enabled, users must verify their email addresses.
     def enable_email_verification?
@@ -545,43 +572,43 @@ module Danbooru
         {
           name: "uploading_guidelines",
           reason: "Does not meet the [[uploading_guidelines|uploading guidelines]]",
-          text: "This post fails to meet the site's standards, be it for artistic worth, image quality, relevancy, or something else.\nKeep in mind that your personal preferences have no bearing on this. If you find the content of a post objectionable, simply [[e621:blacklist|blacklist]] it."
+          text: "This post fails to meet the site's standards, be it for artistic worth, image quality, relevancy, or something else.\nKeep in mind that your personal preferences have no bearing on this. If you find the content of a post objectionable, simply [[yiffyapi:blacklist|blacklist]] it.",
         },
         {
-          name: 'dnp_artist',
+          name: "dnp_artist",
           reason: "The artist of this post is on the [[avoid_posting|avoid posting list]]",
-          text: "Certain artists have requested that their work is not to be published on this site, and were granted [[avoid_posting|Do Not Post]] status.\nSometimes, that status comes with conditions; see [[conditional_dnp]] for more information"
+          text: "Certain artists have requested that their work is not to be published on this site, and were granted [[avoid_posting|Do Not Post]] status.\nSometimes, that status comes with conditions; see [[conditional_dnp]] for more information",
         },
         {
-          name: 'pay_content',
+          name: "pay_content",
           reason: "Paysite, commercial, or subscription content",
-          text: "We do not host paysite or commercial content of any kind. This includes Patreon leaks, reposts from piracy websites, and so on."
+          text: "We do not host paysite or commercial content of any kind. This includes Patreon leaks, reposts from piracy websites, and so on.",
         },
         {
-          name: 'trace',
+          name: "trace",
           reason: "Trace of another artist's work",
-          text: "Images traced from other artists' artwork are not accepted on this site. Referencing from something is fine, but outright copying someone else's work is not.\nPlease, leave more information in the comments, or simply add the original artwork as the posts's parent if it's hosted on this site."
+          text: "Images traced from other artists' artwork are not accepted on this site. Referencing from something is fine, but outright copying someone else's work is not.\nPlease, leave more information in the comments, or simply add the original artwork as the posts's parent if it's hosted on this site.",
         },
         {
-          name: 'previously_deleted',
+          name: "previously_deleted",
           reason: "Previously deleted",
-          text: "Posts usually get removed for a good reason, and reuploading of deleted content is not acceptable.\nPlease, leave more information in the comments, or simply add the original post as this post's parent."
+          text: "Posts usually get removed for a good reason, and reuploading of deleted content is not acceptable.\nPlease, leave more information in the comments, or simply add the original post as this post's parent.",
         },
         {
-          name: 'real_porn',
+          name: "real_porn",
           reason: "Real-life pornography",
-          text: "Posts featuring real-life pornography are not acceptable on this site. No exceptions.\nNote that images featuring non-erotic photographs are acceptable."
+          text: "Posts featuring real-life pornography are not acceptable on this site. No exceptions.\nNote that images featuring non-erotic photographs are acceptable.",
         },
         {
-          name: 'corrupt',
+          name: "corrupt",
           reason: "File is either corrupted, broken, or otherwise does not work",
-          text: "Something about this post does not work quite right. This may be a broken video, or a corrupted image.\nEither way, in order to avoid confusion, please explain the situation in the comments."
+          text: "Something about this post does not work quite right. This may be a broken video, or a corrupted image.\nEither way, in order to avoid confusion, please explain the situation in the comments.",
         },
         {
-          name: 'inferior',
+          name: "inferior",
           reason: "Duplicate or inferior version of another post",
           text: "A superior version of this post already exists on the site.\nThis may include images with better visual quality (larger, less compressed), but may also feature \"fixed\" versions, with visual mistakes accounted for by the artist.\nNote that edits and alternate versions do not fall under this category.",
-          parent: true
+          parent: true,
         },
       ]
     end
@@ -640,7 +667,7 @@ module Danbooru
       20
     end
 
-    def is_post_restricted?(post)
+    def is_post_restricted?(_post)
       false
     end
 
@@ -658,12 +685,12 @@ module Danbooru
       end
     end
 
-    def user_needs_login_for_post?(post)
+    def user_needs_login_for_post?(_post)
       false
     end
 
     def select_posts_visible_to_user(user, posts)
-      posts.select {|x| can_user_see_post?(user, x)}
+      posts.select { |x| can_user_see_post?(user, x) }
     end
 
     # Counting every post is typically expensive because it involves a sequential scan on
@@ -681,7 +708,7 @@ module Danbooru
     # services will fail if you don't set a valid User-Agent.
     def http_headers
       {
-        "User-Agent" => "#{Danbooru.config.safe_app_name}/#{Danbooru.config.version}",
+        "User-Agent" => "#{YiffyAPI.config.safe_app_name}/#{YiffyAPI.config.version}",
       }
     end
 
@@ -691,7 +718,7 @@ module Danbooru
       {
         timeout: 10,
         open_timout: 5,
-        headers: Danbooru.config.http_headers,
+        headers: YiffyAPI.config.http_headers,
       }
     end
 
@@ -701,28 +728,28 @@ module Danbooru
     end
 
     def mailgun_api_key
-      ''
+      ""
     end
 
     def mailgun_domain
-      ''
+      ""
     end
 
     def mail_from_addr
-      'noreply@localhost'
+      "noreply@localhost"
     end
 
     # For downloads, if the host matches any of these IPs, block it
     def banned_ip_for_download?(ip_addr)
       raise ArgumentError unless ip_addr.is_a?(IPAddr)
-      ipv4s = %w(127.0.0.1/8 169.254.0.0/16 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16)
-      ipv6s = %w(::1 fe80::/10 fd00::/8)
+      ipv4s = %w[127.0.0.1/8 169.254.0.0/16 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16]
+      ipv6s = %w[::1 fe80::/10 fd00::/8]
 
 
       if ip_addr.ipv4?
-        ipv4s.any? {|range| IPAddr.new(range).include?(ip_addr)}
+        ipv4s.any? { |range| IPAddr.new(range).include?(ip_addr) }
       elsif ip_addr.ipv6?
-        ipv6s.any? {|range| IPAddr.new(range).include?(ip_addr)}
+        ipv6s.any? { |range| IPAddr.new(range).include?(ip_addr) }
       else
         false
       end
@@ -740,13 +767,13 @@ module Danbooru
     end
 
     def elasticsearch_host
-      '127.0.0.1'
+      "127.0.0.1"
     end
 
     # Use a recaptcha on the signup page to protect against spambots creating new accounts.
     # https://developers.google.com/recaptcha/intro
     def enable_recaptcha?
-      Rails.env.production? && Danbooru.config.recaptcha_site_key.present? && Danbooru.config.recaptcha_secret_key.present?
+      Rails.env.production? && YiffyAPI.config.recaptcha_site_key.present? && YiffyAPI.config.recaptcha_secret_key.present?
     end
 
     def recaptcha_site_key
@@ -781,7 +808,7 @@ module Danbooru
     # Additional video samples will be generated in these dimensions if it makes sense to do so
     # They will be available as additional scale options on applicable posts in the order they appear here
     def video_rescales
-      {'720p' => [1280, 720], '480p' => [640, 480]}
+      {"720p" => [1280, 720], "480p" => [640, 480]}
     end
 
     def image_rescales
@@ -810,7 +837,7 @@ module Danbooru
     end
 
     def method_missing(method, *args)
-      var = ENV["DANBOORU_#{method.to_s.upcase.chomp("?")}"]
+      var = ENV["YIFFYAPI_#{method.to_s.upcase.chomp("?")}"]
 
       if var.present?
         env_to_boolean(method, var)
@@ -821,7 +848,7 @@ module Danbooru
   end
 
   def config
-    @configuration ||= EnvironmentConfiguration.new
+    @config ||= EnvironmentConfiguration.new
   end
 
   module_function :config

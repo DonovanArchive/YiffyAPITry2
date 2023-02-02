@@ -5,7 +5,7 @@ module Maintenance
     class EmailChangesControllerTest < ActionDispatch::IntegrationTest
       context "in all cases" do
         setup do
-          Danbooru.config.stubs(:enable_email_verification?).returns(true)
+          YiffyAPI.config.stubs(:enable_email_verification?).returns(true)
           @user = create(:user, email: "bob@ogres.net")
         end
 

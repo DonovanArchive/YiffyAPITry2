@@ -47,7 +47,7 @@ class TagRelationshipRequest
       original_post_attributes: {
         body: self.class.command_string(antecedent_name, consequent_name, tag_relationship_id) + "\n\nReason: #{reason}"
       },
-      category_id: Danbooru.config.alias_implication_forum_category
+      category_id: YiffyAPI.config.alias_implication_forum_category
     )
   end
 

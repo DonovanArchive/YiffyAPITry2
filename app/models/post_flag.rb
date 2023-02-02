@@ -8,7 +8,7 @@ class PostFlag < ApplicationRecord
   end
 
   COOLDOWN_PERIOD = 1.days
-  MAPPED_REASONS = Danbooru.config.flag_reasons.map { |i| [i[:name], i[:reason]] }.to_h
+  MAPPED_REASONS = YiffyAPI.config.flag_reasons.map { |i| [i[:name], i[:reason]] }.to_h
 
   belongs_to_creator :class_name => "User"
   user_status_counter :post_flag_count

@@ -3,10 +3,10 @@
   <div class="flag_post">
     <%= PostPresenter.preview(@post, show_deleted: true, no_blacklist: true) %>
   </div>
-  
-  
+
+
   <div class="dtext-container">
-    <%= format_text(WikiPage.titled(Danbooru.config.flag_notice_wiki_page).first.try(&:body)) %>
+    <%= format_text(WikiPage.titled(YiffyAPI.config.flag_notice_wiki_page).first.try(&:body)) %>
   </div>
 </div>
 
@@ -18,7 +18,7 @@
   <%= custom_form_for(post_flag) do |f| %>
     <%= f.hidden_field :post_id %>
 
-    <% Danbooru.config.flag_reasons.each do |flag_reason| %>
+    <% YiffyAPI.config.flag_reasons.each do |flag_reason| %>
       <% if flag_reason[:name] == "uploading_guidelines" && !@post.flaggable_for_guidelines? %>
         <% next %>
       <% end %>
@@ -28,13 +28,13 @@
         <span class="flag-reason-title"><%= format_text(flag_reason[:reason], inline: true) %></span>
         <div class="dtext-container flag-reason-text"><%= format_text(flag_reason[:text]) %></div>
       </label>
-      
+
       <% if flag_reason[:parent] %>
         <%= f.input :parent_id, as: :string, label: "Inferior of Post #" %>
       <% end %>
-      
+
     <% end %>
-    
+
     <div>
       <%= f.submit "Submit" %>
     </div>

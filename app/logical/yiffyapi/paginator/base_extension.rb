@@ -1,4 +1,4 @@
-module Danbooru
+module YiffyAPI
   module Paginator
     module BaseExtension
       def paginate_base(page, options = {})
@@ -11,20 +11,20 @@ module Danbooru
         elsif use_sequential_paginator?(page)
           [paginate_sequential(page), :sequential]
         else
-          raise Danbooru::Paginator::PaginationError, "Invalid page number."
+          raise YiffyAPI::Paginator::PaginationError, "Invalid page number."
         end
       end
 
       def validate_numbered_page(page)
         return if page.to_i <= max_numbered_pages
-        raise Danbooru::Paginator::PaginationError, "You cannot go beyond page #{max_numbered_pages}. Please narrow your search terms."
+        raise YiffyAPI::Paginator::PaginationError, "You cannot go beyond page #{max_numbered_pages}. Please narrow your search terms."
       end
 
       def max_numbered_pages
         if @paginator_options[:max_count]
-          [Danbooru.config.max_numbered_pages, @paginator_options[:max_count] / records_per_page].min
+          [YiffyAPI.config.max_numbered_pages, @paginator_options[:max_count] / records_per_page].min
         else
-          Danbooru.config.max_numbered_pages
+          YiffyAPI.config.max_numbered_pages
         end
       end
 
@@ -47,7 +47,7 @@ module Danbooru
       end
 
       def records_per_page
-        limit = @paginator_options.try(:[], :limit) || Danbooru.config.posts_per_page
+        limit = @paginator_options.try(:[], :limit) || YiffyAPI.config.posts_per_page
         [limit.to_i, 320].min
       end
 

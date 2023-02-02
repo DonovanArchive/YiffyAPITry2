@@ -39,7 +39,7 @@ class StatsUpdater
     ### Users ###
 
     stats[:total_users] = User.count
-    Danbooru.config.levels.each do |name, level|
+    YiffyAPI.config.levels.each do |name, level|
       stats["#{name.downcase}_users".to_sym] = User.where(level: level).count
     end
     stats[:unactivated_users] = User.where('email_verification_key IS NOT NULL').count

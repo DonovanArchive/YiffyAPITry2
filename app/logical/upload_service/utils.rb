@@ -16,7 +16,7 @@ class UploadService
         return
       end
 
-      Danbooru.config.storage_manager.delete_post_files(md5, file_ext)
+      YiffyAPI.config.storage_manager.delete_post_files(md5, file_ext)
     end
 
     def distribute_files(file, record, type, original_post_id: nil)
@@ -25,7 +25,7 @@ class UploadService
       post.id = original_post_id if original_post_id.present?
       post.md5 = record.md5
       post.file_ext = record.file_ext
-      [Danbooru.config.storage_manager, Danbooru.config.backup_storage_manager].each do |sm|
+      [YiffyAPI.config.storage_manager, YiffyAPI.config.backup_storage_manager].each do |sm|
         sm.store_file(file, post, type)
       end
     end
@@ -66,7 +66,7 @@ class UploadService
     end
 
     def automatic_tags(upload, file)
-      return "" unless Danbooru.config.enable_dimension_autotagging?
+      return "" unless YiffyAPI.config.enable_dimension_autotagging?
 
       tags = []
       tags += ["animated_gif", "animated"] if upload.is_animated_gif?(file.path)

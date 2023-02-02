@@ -38,7 +38,7 @@
 
   <div id="delreason-prebuilt" class="simple_form">
     <b>Reason</b>
-    <% Danbooru.config.deletion_reasons.each do |deletion_reason| %>
+    <% YiffyAPI.config.deletion_reasons.each do |deletion_reason| %>
       <% if deletion_reason.nil? || deletion_reason.empty? %>
         <br />
       <% else %>

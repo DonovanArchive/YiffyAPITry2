@@ -9,8 +9,7 @@ class Mascot < ApplicationRecord
   validate :set_file_properties
   validates :md5, uniqueness: true
   validate if: :mascot_file do |mascot|
-    max_file_sizes = { "jpg" => 500.kilobytes, "png" => 500.kilobytes }
-    FileValidator.new(mascot, mascot_file.path).validate(max_file_sizes: max_file_sizes, max_width: 1_000, max_height: 1_000)
+    FileValidator.new(mascot, mascot_file.path).validate(max_file_sizes: YiffyAPI.config.max_mascot_file_sizes, max_width: YiffyAPI.config.max_mascot_width, max_height: YiffyAPI.config.max_mascot_height)
   end
 
   after_commit :invalidate_cache
@@ -27,14 +26,14 @@ class Mascot < ApplicationRecord
   def write_storage_file
     return if mascot_file.blank?
 
-    Danbooru.config.storage_manager.delete_mascot(md5_previously_was, file_ext_previously_was)
-    Danbooru.config.storage_manager.store_mascot(mascot_file, self)
+    YiffyAPI.config.storage_manager.delete_mascot(md5_previously_was, file_ext_previously_was)
+    YiffyAPI.config.storage_manager.store_mascot(mascot_file, self)
   end
 
   def self.active_for_browser
     Cache.fetch("active_mascots", 1.day) do
       query = Mascot.where(active: true)
-      query = query.where(safe_mode_only: false) if !Danbooru.config.safe_mode?
+      query = query.where(safe_mode_only: false) if !YiffyAPI.config.safe_mode?
       mascots = query.map do |mascot|
         mascot.slice(:id, :background_color, :artist_url, :artist_name).merge(background_url: mascot.url_path)
       end
@@ -47,15 +46,15 @@ class Mascot < ApplicationRecord
   end
 
   def remove_storage_file
-    Danbooru.config.storage_manager.delete_mascot(md5, file_ext)
+    YiffyAPI.config.storage_manager.delete_mascot(md5, file_ext)
   end
 
   def url_path
-    Danbooru.config.storage_manager.mascot_url(self)
+    YiffyAPI.config.storage_manager.mascot_url(self)
   end
 
   def file_path
-    Danbooru.config.storage_manager.mascot_path(self)
+    YiffyAPI.config.storage_manager.mascot_path(self)
   end
 
   concerning :ValidationMethods do
@@ -72,7 +71,7 @@ class Mascot < ApplicationRecord
     end
 
     def file_size
-      @file_size ||= Danbooru.config.storage_manager.open(mascot_file.path).size
+      @file_size ||= YiffyAPI.config.storage_manager.open(mascot_file.path).size
     end
   end
 

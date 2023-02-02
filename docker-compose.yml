@@ -1,12 +1,12 @@
 version: "3"
 
 x-environment: &common-env
-  DATABASE_URL: postgresql://danbooru:@postgres
-  DANBOORU_HOSTNAME: http://localhost:3000
-  DANBOORU_REDIS_URL: redis://redis
-  DANBOORU_ELASTICSEARCH_HOST: elastic
-  DANBOORU_MEMCACHED_SERVERS: memcached
-  DANBOORU_IQDBS_SERVER: http://iqdb:4567
+  DATABASE_URL: postgresql://yiffyapi:@postgres
+  YIFFYAPI_HOSTNAME: http://localhost:3000
+  YIFFYAPI_REDIS_URL: redis://redis
+  YIFFYAPI_ELASTICSEARCH_HOST: elastic
+  YIFFYAPI_MEMCACHED_SERVERS: memcached
+  YIFFYAPI_IQDBS_SERVER: http://iqdb:4567
   # These are just development secrets, do not use them in production
   SECRET_TOKEN: 1c58518a891eff4520cadc59afa9e378a9325f1247544ff258096e497f095f45
   SESSION_SECRET_KEY: 44b4f44e9f253c406cbe727d403d500c1cecff943e4d2aea8f5447f28846fffe
@@ -22,12 +22,12 @@ x-depends-on: &common-depends-on
     condition: service_started
 
 services:
-  e621:
+  yiffyapi:
     build:
       context: ./
       args:
         COMPOSE_PROFILES: ${COMPOSE_PROFILES-}
-    image: e621
+    image: yiffyapi
     volumes:
       - .:/app
       - node_modules:/app/node_modules
@@ -54,25 +54,25 @@ services:
       NGINX_HOST: localhost
       NGINX_PORT: 3000
     depends_on:
-      - e621
+      - yiffyapi
     ports:
-      - "3000:3000"
-    
+      - "127.0.0.1:3000:3000"
+
   postgres:
     build:  ./docker/postgres
     environment:
-      - POSTGRES_USER=danbooru
+      - POSTGRES_USER=yiffyapi
       - POSTGRES_HOST_AUTH_METHOD=trust
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
-      - "34517:5432"
-  
+      - "127.0.0.1:34517:5432"
+
   redis:
     image: redis:4.0.9-alpine
     command: redis-server --save 10 1 --loglevel warning
     volumes:
-      - redis_data_v2:/data
+      - redis_data:/data
 
   memcached:
     image: memcached:1.5.6-alpine
@@ -90,14 +90,14 @@ services:
       interval: 10s
       timeout: 2s
       test: nc -z elastic 9200
-  
+
   iqdb:
     build: ./docker/iqdb
     environment:
       - IQDB_HOSTNAME=localhost
       - IQDB_PORT=62125
       # Hardcoded in iqdbs Procfile
-      - IQDB_DATABASE_FILE=/home/vagrant/iqdbs/e621.db
+      - IQDB_DATABASE_FILE=/home/vagrant/iqdbs/yiffyapi.db
       - SINATRA_PORT=4567
       - IMAGES_FOLDER=/data
       - REDIS_URL=redis://redis
@@ -112,7 +112,7 @@ services:
   # Useful for development
 
   tests:
-    image: e621
+    image: yiffyapi
     environment:
       <<: *common-env
       # Hide annoying output from libvips on corrupt files
@@ -127,15 +127,15 @@ services:
       - tests
 
   rubocop:
-    image: e621
+    image: yiffyapi
     volumes:
       - .:/app
     entrypoint: bundle exec rubocop
-    profiles: 
+    profiles:
       - rubocop
 
   solargraph:
-    image: e621
+    image: yiffyapi
     entrypoint: solargraph socket -h 0.0.0.0
     working_dir: $PWD
     volumes:
@@ -150,7 +150,7 @@ volumes:
   iqdb_data:
   elastic_data:
   db_data:
-  redis_data_v2:
+  redis_data:
   node_modules:
   public_packs:
   public_packs_test:
