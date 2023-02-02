@@ -3,7 +3,7 @@ module ApplicationHelper
     if CurrentUser.user.present? && CurrentUser.is_member?
       return CurrentUser.disable_responsive_mode?
     end
-    cookies[:nmm].present?
+    cookies[:disable_mobile_mode].present?
   end
 
 

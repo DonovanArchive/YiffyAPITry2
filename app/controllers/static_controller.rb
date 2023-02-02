@@ -1,18 +1,30 @@
 class StaticController < ApplicationController
   def privacy
     @page = WikiPage.find_by(title: "e621:privacy_policy")
+    if @page.nil?
+      render "static/404", formats: [:html], status: 404
+    end
   end
 
   def terms_of_service
     @page = WikiPage.find_by(title: "e621:terms_of_service")
+    if @page.nil?
+      render "static/404", formats: [:html], status: 404
+    end
   end
 
   def contact
     @page = WikiPage.find_by(title: "e621:contact")
+    if @page.nil?
+      render "static/404", formats: [:html], status: 404
+    end
   end
 
   def takedown
     @page = WikiPage.find_by(title: "e621:takedown")
+    if @page.nil?
+      render "static/404", formats: [:html], status: 404
+    end
   end
 
   def not_found
@@ -38,10 +50,10 @@ class StaticController < ApplicationController
       user.disable_responsive_mode = !user.disable_responsive_mode
       user.save
     else
-      if cookies[:nmm]
-        cookies.delete(:nmm)
+      if cookies[:disable_mobile_mode]
+        cookies.delete(:disable_mobile_mode)
       else
-        cookies.permanent[:nmm] = '1'
+        cookies.permanent[:disable_mobile_mode] = '1'
       end
     end
     redirect_back fallback_location: posts_path
@@ -50,10 +62,9 @@ class StaticController < ApplicationController
   def discord
     unless CurrentUser.can_discord?
       raise User::PrivilegeError.new("You must have an account for at least one week in order to join the Discord server.")
-      return
     end
     if request.post?
-      time = (Time.now + 5.minute).to_i
+      time = (Time.now + 5.minutes).to_i
       secret = YiffyAPI.config.discord_secret
       # TODO: Proper HMAC
       hashed_values = Digest::SHA256.hexdigest("#{CurrentUser.name} #{CurrentUser.id} #{time} #{secret}")
