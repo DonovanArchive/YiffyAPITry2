@@ -83,8 +83,8 @@ module YiffyAPI
         "Contributor" => 33,
         "Former Staff" => 34,
         "Janitor" => 35,
-        "System" => 36,
         "Moderator" => 40,
+        "System" => 49,
         "Admin" => 50,
       }
     end
