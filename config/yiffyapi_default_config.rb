@@ -80,7 +80,6 @@ module YiffyAPI
         "Blocked" => 10,
         "Member" => 20,
         "Privileged" => 30,
-        "Contributor" => 33,
         "Former Staff" => 34,
         "Janitor" => 35,
         "Moderator" => 40,

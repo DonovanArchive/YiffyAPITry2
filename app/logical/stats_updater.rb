@@ -25,13 +25,13 @@ class StatsUpdater
     stats[:jpg_posts] = Post.tag_match('status:any type:jpg').count_only
     stats[:png_posts] = Post.tag_match('status:any type:png').count_only
     stats[:gif_posts] = Post.tag_match('status:any type:gif').count_only
-    stats[:swf_posts] = Post.tag_match('status:any type:swf').count_only
+    stats[:webp_posts] = Post.tag_match('status:any type:webp').count_only
     stats[:webm_posts] = Post.tag_match('status:any type:webm').count_only
     stats[:average_file_size] = Post.average("file_size")
     stats[:total_file_size] = Post.sum("file_size")
 
     if stats[:total_posts]
-      stats[:average_posts_per_day] = (stats[:total_posts] / ((Time.now - stats[:started])/(60*60*24))).round
+      stats[:average_posts_per_day] = (stats[:total_posts] / ((Time.now - stats[:started]) / (60 * 60 * 24))).round
     else
       stats[:average_posts_per_day] = 0
     end
@@ -40,13 +40,13 @@ class StatsUpdater
 
     stats[:total_users] = User.count
     YiffyAPI.config.levels.each do |name, level|
-      stats["#{name.downcase}_users".to_sym] = User.where(level: level).count
+      stats["#{name.downcase.tr(' ', '_')}_users".to_sym] = User.where(level: level).count
     end
-    stats[:unactivated_users] = User.where('email_verification_key IS NOT NULL').count
-    stats[:total_dmails] = Dmail.maximum("id")/2
+    stats[:unactivated_users] = User.where.not(email_verification_key: nil).count
+    stats[:total_dmails] = Dmail.maximum("id") / 2
 
     if stats[:total_users]
-      stats[:average_registrations_per_day] = (stats[:total_users] / ((Time.now - stats[:started])/(60*60*24))).round
+      stats[:average_registrations_per_day] = (stats[:total_users] / ((Time.now - stats[:started]) / (60 * 60 * 24))).round
     else
       stats[:average_registrations_per_day] = 0
     end
@@ -59,7 +59,7 @@ class StatsUpdater
 
     if stats[:total_comments]
       stats[:deleted_comments] = stats[:total_comments] - (stats[:active_comments] + stats[:hidden_comments])
-      stats[:average_comments_per_day] = (stats[:total_comments] / ((Time.now - stats[:started])/(60*60*24))).round
+      stats[:average_comments_per_day] = (stats[:total_comments] / ((Time.now - stats[:started]) / (60 * 60 * 24))).round
     else
       stats[:deleted_comments] = 0
       stats[:average_comments_per_day] = 0
@@ -72,7 +72,7 @@ class StatsUpdater
 
     if stats[:total_forum_posts]
       stats[:average_posts_per_thread] = (stats[:total_forum_posts] / stats[:total_forum_threads]).round
-      stats[:average_forum_posts_per_day] = (stats[:total_forum_posts] / ((Time.now - stats[:started])/(60*60*24))).round
+      stats[:average_forum_posts_per_day] = (stats[:total_forum_posts] / ((Time.now - stats[:started]) / (60 * 60 * 24))).round
     else
       stats[:average_posts_per_thread] = 0
       stats[:average_forum_posts_per_day] = 0
@@ -86,7 +86,7 @@ class StatsUpdater
 
     if stats[:total_blips]
       stats[:deleted_blips] = stats[:total_blips] - (stats[:active_blips] + stats[:hidden_blips])
-      stats[:average_blips_per_day] = (stats[:total_blips] / ((Time.now - stats[:started])/(60*60*24))).round
+      stats[:average_blips_per_day] = (stats[:total_blips] / ((Time.now - stats[:started]) / (60 * 60 * 24))).round
     else
       stats[:total_blips] = 0
       stats[:deleted_blips] = 0

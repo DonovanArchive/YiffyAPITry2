@@ -17,8 +17,8 @@
     jQuery("#stats-pct-jpgposts").html(pct(stats.posts.jpg, postsCount));
     jQuery("#stats-pct-pngposts").html(pct(stats.posts.png, postsCount));
     jQuery("#stats-pct-gifposts").html(pct(stats.posts.gif, postsCount));
-    jQuery("#stats-pct-swfposts").html(pct(stats.posts.swf, postsCount));
     jQuery("#stats-pct-webmposts").html(pct(stats.posts.webm, postsCount));
+    jQuery("#stats-pct-webpposts").html(pct(stats.posts.webp, postsCount));
 
     jQuery("#stats-pct-safeposts").html(pct(stats.posts.safe, postsCount));
     jQuery("#stats-pct-questionableposts").html(pct(stats.posts.questionable, postsCount));
@@ -28,9 +28,10 @@
     jQuery("#stats-pct-blockedusers").html(pct(stats.users.blocked, stats.users.total));
     jQuery("#stats-pct-memberusers").html(pct(stats.users.member, stats.users.total));
     jQuery("#stats-pct-privilegedusers").html(pct(stats.users.privileged, stats.users.total));
-    jQuery("#stats-pct-contributorusers").html(pct(stats.users.contributor, stats.users.total));
+    jQuery("#stats-pct-formerstaffusers").html(pct(stats.users.former_staff, stats.users.total));
     jQuery("#stats-pct-janitorusers").html(pct(stats.users.janitor, stats.users.total));
     jQuery("#stats-pct-modusers").html(pct(stats.users.mod, stats.users.total));
+    jQuery("#stats-pct-systemusers").html(pct(stats.users.system, stats.users.total));
     jQuery("#stats-pct-adminusers").html(pct(stats.users.admin, stats.users.total));
 
     jQuery("#stats-pct-activecomments").html(pct(stats.comments.active, stats.comments.total));
@@ -51,7 +52,7 @@
     jQuery("#stats-pct-loretags").html(pct(stats.tags.lore, stats.tags.total));
   });
 
-  var stats = {
+  const stats = {
     posts: {
       total:       <%= @stats['total_posts'] %>,
       active:      <%= @stats['active_posts'] %>,
@@ -61,7 +62,7 @@
       jpg:         <%= @stats['jpg_posts'] %>,
       png:         <%= @stats['png_posts'] %>,
       gif:         <%= @stats['gif_posts'] %>,
-      swf:         <%= @stats['swf_posts'] %>,
+      webp:        <%= @stats['webp_posts'] %>,
       webm:        <%= @stats['webm_posts'] %>,
 
       safe:        <%= @stats['safe_posts'] %>,
@@ -75,15 +76,16 @@
     },
 
     users: {
-      total:       <%= @stats['total_users'] %>,
-      blocked:     <%= @stats['blocked_users'] %>,
-      member:      <%= @stats['member_users'] %>,
-      privileged:  <%= @stats['privileged_users'] %>,
-      contributor: <%= @stats['contributor_users'] %>,
-      janitor:     <%= @stats['janitor_users'] %>,
-      mod:         <%= @stats['moderator_users'] %>,
-      admin:       <%= @stats['admin_users'] %>,
-      unactivated: <%= @stats['unactivated_users'] %>
+      total:        <%= @stats['total_users'] %>,
+      blocked:      <%= @stats['blocked_users'] %>,
+      member:       <%= @stats['member_users'] %>,
+      privileged:   <%= @stats['privileged_users'] %>,
+      former_staff: <%= @stats['former_staff_users'] %>,
+      janitor:      <%= @stats['janitor_users'] %>,
+      mod:          <%= @stats['moderator_users'] %>,
+      system:       <%= @stats['system_users'] %>,
+      admin:        <%= @stats['admin_users'] %>,
+      unactivated:  <%= @stats['unactivated_users'] %>
     },
 
     comments: {
@@ -237,8 +239,8 @@
         <td><%= del(@stats['gif_posts']) %></td><td class='stats-pct' id='stats-pct-gifposts'></td>
       </tr>
       <tr>
-        <td>Flash posts</td>
-        <td><%= del(@stats['swf_posts']) %></td><td class='stats-pct' id='stats-pct-swfposts'></td>
+        <td>WebP posts</td>
+        <td><%= del(@stats['webp_posts']) %></td><td class='stats-pct' id='stats-pct-webpposts'></td>
       </tr>
       <tr>
         <td>WebM posts</td>
@@ -277,8 +279,8 @@
         <td><%= del(@stats['privileged_users']) %></td><td class='stats-pct' id='stats-pct-privilegedusers'></td>
       </tr>
       <tr>
-        <td>Contributors</td>
-        <td><%= del(@stats['contributor_users']) %></td><td class='stats-pct' id='stats-pct-contributorusers'></td>
+        <td>Former Staff users</td>
+        <td><%= del(@stats['former_staff_users']) %></td><td class='stats-pct' id='stats-pct-formerstaffusers'></td>
       </tr>
       <tr>
         <td>Janitors</td>
@@ -287,6 +289,10 @@
       <tr>
         <td>Mods</td>
         <td><%= del(@stats['moderator_users']) %></td><td class='stats-pct' id='stats-pct-modusers'></td>
+      </tr>
+      <tr>
+        <td>System</td>
+        <td><%= del(@stats['system_users']) %></td><td class='stats-pct' id='stats-pct-systemusers'></td>
       </tr>
       <tr>
         <td>Admins</td>

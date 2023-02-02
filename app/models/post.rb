@@ -251,7 +251,6 @@ class Post < ApplicationRecord
     def has_large?
       return true if is_video?
       return false if is_gif?
-      return false if is_flash?
       return false if has_tag?("animated_gif|animated_png")
       is_image? && image_width.present? && image_width > YiffyAPI.config.large_image_width
     end
@@ -634,7 +633,7 @@ class Post < ApplicationRecord
     def add_automatic_tags(tags)
       return tags if !YiffyAPI.config.enable_dimension_autotagging?
 
-      tags -= %w[thumbnail low_res hi_res absurd_res superabsurd_res huge_filesize flash webm mp4 wide_image long_image]
+      tags -= %w[thumbnail low_res hi_res absurd_res superabsurd_res huge_filesize webm mp4 wide_image long_image]
 
       if has_dimensions?
         tags << "superabsurd_res" if image_width >= 10_000 && image_height >= 10_000
@@ -654,10 +653,6 @@ class Post < ApplicationRecord
 
       if file_size >= 30.megabytes
         tags << "huge_filesize"
-      end
-
-      if is_flash?
-        tags << "flash"
       end
 
       if is_webm?
@@ -1712,15 +1707,15 @@ class Post < ApplicationRecord
     return false if loginblocked?
     return false if safeblocked?
     return false if deleteblocked?
-    return true
+    true
   end
 
   def allow_sample_resize?
-    !is_flash?
+    true
   end
 
   def force_original_size?
-    is_flash?
+    false
   end
 
   def reload(options = nil)

@@ -326,10 +326,6 @@ Post.nav_next = function(e) {
 
 Post.initialize_shortcuts = function() {
   if ($("#a-show").length) {
-    if ($("#flash-content").length) {
-      Utility.disableShortcuts = true;
-      $("#flash-shortcut-notice").show();
-    }
     Utility.keydown("a", "prev_page", Post.nav_prev);
     Utility.keydown("d", "next_page", Post.nav_next);
   }
@@ -634,8 +630,6 @@ function most_relevant_sample_size(post) {
 Post.initialize_resize = function () {
   Post.initialize_change_resize_mode_link();
   const post = Post.currentPost();
-  if (post?.file?.ext === 'swf')
-    return;
 
   const is_post_video = is_video(post);
   if (!is_post_video) {

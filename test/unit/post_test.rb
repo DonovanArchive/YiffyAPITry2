@@ -1031,18 +1031,6 @@ class PostTest < ActiveSupport::TestCase
         end
       end
 
-      context "with a .swf file extension" do
-        setup do
-          @post.file_ext = "swf"
-          @post.tag_string = ""
-          @post.save
-        end
-
-        should "have the appropriate file type tag added automatically" do
-          assert_match(/flash/, @post.tag_string)
-        end
-      end
-
       context "that has been updated" do
         should "create a new version if it's the first version" do
           assert_difference("PostVersion.count", 1) do
@@ -1286,7 +1274,7 @@ class PostTest < ActiveSupport::TestCase
   context "Favorites:" do
     context "Removing a post from a user's favorites" do
       setup do
-        @user = create(:contributor_user)
+        @user = create(:former_staff_user)
         @post = create(:post)
         FavoriteManager.add!(user: @user, post: @post)
         @user.reload
@@ -1315,7 +1303,7 @@ class PostTest < ActiveSupport::TestCase
 
     context "Adding a post to a user's favorites" do
       setup do
-        @user = create(:contributor_user)
+        @user = create(:former_staff_user)
         @post = create(:post)
       end
 

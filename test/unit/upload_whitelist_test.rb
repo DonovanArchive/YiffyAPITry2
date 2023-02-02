@@ -3,7 +3,7 @@ require 'test_helper'
 class UploadWhitelistTest < ActiveSupport::TestCase
   context "A upload whitelist" do
     setup do
-      user = create(:contributor_user)
+      user = create(:former_staff_user)
       CurrentUser.user = user
 
       @whitelist = create(:upload_whitelist, pattern: "*.e621.net/data/*", note: "e621")

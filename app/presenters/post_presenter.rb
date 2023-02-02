@@ -94,9 +94,9 @@ class PostPresenter < Presenter
     klass << "post-status-deleted" if post.is_deleted?
     klass << "post-status-has-parent" if post.parent_id
     klass << "post-status-has-children" if post.has_visible_children?
-    klass << "post-rating-safe" if post.rating == 's'
-    klass << "post-rating-questionable" if post.rating == 'q'
-    klass << "post-rating-explicit" if post.rating == 'e'
+    klass << "post-rating-safe" if post.rating == "s"
+    klass << "post-rating-questionable" if post.rating == "q"
+    klass << "post-rating-explicit" if post.rating == "e"
     klass << "post-no-blacklist" if options[:no_blacklist]
     klass
   end
@@ -104,7 +104,7 @@ class PostPresenter < Presenter
   def self.data_attributes(post, include_post: false)
     attributes = {
         "data-id" => post.id,
-        "data-has-sound" => post.has_tag?('video_with_sound|flash_with_sound'),
+        "data-has-sound" => post.has_tag?("sound"),
         "data-tags" => post.tag_string,
         "data-rating" => post.rating,
         "data-width" => post.image_width,
@@ -140,28 +140,28 @@ class PostPresenter < Presenter
       next unless post.has_sample_size?(k)
       dims = post.scaled_sample_dimensions(v)
       alternate_samples[k] = {
-          type: 'video',
+          type: "video",
           height: dims[1],
           width: dims[0],
-          urls: post.visible? ? [post.scaled_url_ext(k, 'webm'), post.scaled_url_ext(k, 'mp4')] : [nil, nil]
+          urls: post.visible? ? [post.scaled_url_ext(k, "webm"), post.scaled_url_ext(k, "mp4")] : [nil, nil]
       }
     end
-    if post.has_sample_size?('original')
-      alternate_samples['original'] = {
-          type: 'video',
+    if post.has_sample_size?("original")
+      alternate_samples["original"] = {
+          type: "video",
           height: post.image_height,
           width: post.image_width,
-          urls: post.visible? ? [nil, post.file_url_ext('mp4')] : [nil, nil]
+          urls: post.visible? ? [nil, post.file_url_ext("mp4")] : [nil, nil]
       }
     end
     YiffyAPI.config.image_rescales.each do |k,v|
       next unless post.has_sample_size?(k)
       dims = post.scaled_sample_dimensions(v)
       alternate_samples[k] = {
-          type: 'image',
+          type: "image",
           height: dims[1],
           width: dims[0],
-          url: post.visible? ? post.scaled_url_ext(k, 'jpg') : nil
+          url: post.visible? ? post.scaled_url_ext(k, "jpg") : nil
       }
     end
     {
@@ -210,8 +210,8 @@ class PostPresenter < Presenter
             alternates: alternate_samples
         },
         sources: post.source&.split('\n'),
-        tags: post.tag_string.split(' '),
-        locked_tags: post.locked_tags&.split(' ') || [],
+        tags: post.tag_string.split(" "),
+        locked_tags: post.locked_tags&.split(" ") || [],
         is_favorited: post.is_favorited?
     }
 
@@ -226,7 +226,7 @@ class PostPresenter < Presenter
     }
 
     if @post.bg_color
-      attributes['style'] = "background-color: ##{@post.bg_color};"
+      attributes["style"] = "background-color: ##{@post.bg_color};"
     end
 
     attributes
