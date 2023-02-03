@@ -85,7 +85,7 @@ class PostReplacementsController < ApplicationController
   def check_allow_create
     return if CurrentUser.can_replace?
 
-    raise User::PrivilegeError, "You are not part of the replacements beta"
+    raise User::PrivilegeError, "You are banned from creating replacements."
   end
 
   def create_params

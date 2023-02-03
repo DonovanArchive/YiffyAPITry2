@@ -37,12 +37,23 @@ end
 admin = create_user("admin", User::Levels::ADMIN, 2.weeks.ago) do |user|
   user.can_upload_free = true
   user.can_approve_posts = true
-  user.replacements_beta = true
 end
 
 create_user(YiffyAPI.config.system_user, User::Levels::SYSTEM, 2.weeks.ago) do |user|
   user.can_upload_free = true
   user.can_approve_posts = true
+end
+
+create_user("test", User::Levels::MEMBER, 2.weeks.ago)
+
+banned = create_user("banned", User::Levels::BLOCKED, 2.weeks.ago) do |user|
+  user.base_upload_limit = 0
+  user.no_flagging = true
+  user.no_replacements = true
+end
+
+CurrentUser.scoped(admin) do
+  Ban.create!(user: banned, duration: -1, reason: "Testing Purposes.")
 end
 
 ForumCategory.find_or_create_by!(id: YiffyAPI.config.alias_implication_forum_category) do |category|

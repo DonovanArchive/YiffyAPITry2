@@ -30,8 +30,14 @@ class UserPresenter
       permissions << "unrestricted uploads"
     end
 
-    if user.replacements_beta?
-      permissions << "replacements beta"
+    if CurrentUser.is_janitor?
+      if user.no_flagging?
+        permissions << "flagging ban"
+      end
+
+      if user.no_replacements?
+        permissions << "replacements ban"
+      end
     end
 
     permissions.join(", ")

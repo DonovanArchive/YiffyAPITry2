@@ -1,5 +1,5 @@
 class UserPromotion
-  attr_reader :user, :promoter, :new_level, :options, :old_can_approve_posts, :old_can_upload_free, :old_no_flagging, :old_replacements_beta
+  attr_reader :user, :promoter, :new_level, :options, :old_can_approve_posts, :old_can_upload_free, :old_no_flagging, :old_no_replacements
 
   def initialize(user, promoter, new_level, options = {})
     @user = user
@@ -14,7 +14,7 @@ class UserPromotion
     @old_can_approve_posts = user.can_approve_posts?
     @old_can_upload_free = user.can_upload_free?
     @old_no_flagging = user.no_flagging?
-    @old_replacements_beta = user.replacements_beta?
+    @old_no_replacements = user.no_replacements?
 
     user.level = new_level
 
@@ -30,8 +30,8 @@ class UserPromotion
       user.no_flagging = options[:no_flagging]
     end
 
-    if options.key?(:replacements_beta)
-      user.replacements_beta = options[:replacements_beta]
+    if options.key?(:no_replacements)
+      user.no_replacements = options[:no_replacements]
     end
 
     create_mod_actions
@@ -59,7 +59,7 @@ class UserPromotion
     flag_check(added, removed, "can_approve_posts", "approve posts")
     flag_check(added, removed, "can_upload_free", "unlimited upload slots")
     flag_check(added, removed, "no_flagging", "flag ban")
-    flag_check(added, removed, "replacements_beta", "replacements beta")
+    flag_check(added, removed, "no_replacements", "replacements ban")
 
     if added.any? || removed.any?
       ModAction.log(:user_flags_change, { user_id: user.id, added: added, removed: removed })

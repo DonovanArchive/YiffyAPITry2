@@ -57,7 +57,7 @@ class User < ApplicationRecord
     no_feedback
     disable_user_dmails
     enable_compact_uploader
-    replacements_beta
+    no_replacements
   )
 
   include YiffyAPI::HasBitFlags
@@ -130,7 +130,7 @@ class User < ApplicationRecord
 
     def unban!
       self.is_banned = false
-      self.level = 20
+      self.level = User::Levels::MEMBER
       save
     end
 
@@ -537,7 +537,7 @@ class User < ApplicationRecord
     end
 
     def can_replace?
-      is_janitor? || replacements_beta?
+      is_janitor? || !no_replacements?
     end
 
     def can_view_staff_notes?

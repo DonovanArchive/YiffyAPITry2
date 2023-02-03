@@ -41,8 +41,8 @@
       </div>
 
       <div class="input">
-        <label for="user_replacements_beta" class="optional">Replacements Beta</label>
-        <%= select(:user, :replacements_beta, [["Yes", true], ["No", false]]) %>
+        <label for="user_no_replacements" class="optional">Banned From Replacements</label>
+        <%= select(:user, :no_replacements, [["Yes", true], ["No", false]]) %>
       </div>
       <%= f.button :submit, value: "Update" %>
     <% end %>
