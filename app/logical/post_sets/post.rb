@@ -1,13 +1,12 @@
 module PostSets
   class Post < PostSets::Base
-    MAX_PER_PAGE = 320
     attr_reader :tag_array, :public_tag_array, :page, :random, :post_count, :format
 
     def initialize(tags, page = 1, per_page = nil, options = {})
-      tags ||= ''
+      tags ||= ""
       @public_tag_array = Tag.scan_query(tags)
       tags += " rating:s" if CurrentUser.safe_mode?
-      tags += " -status:deleted" if !Tag.has_metatag?(tags, "status", "-status")
+      tags += " -status:deleted" unless Tag.has_metatag?(tags, "status", "-status")
       @tag_array = Tag.scan_query(tags)
       @page = page
       @per_page = per_page
@@ -28,11 +27,11 @@ module PostSets
     end
 
     def unordered_tag_array
-      tag_array.reject {|tag| tag =~ /\Aorder:/i }
+      tag_array.grep_v(/\Aorder:/i)
     end
 
     def tag
-      return nil if !is_single_tag?
+      return nil unless is_single_tag?
       return nil if is_metatag_only?
       @tag ||= Tag.find_by(name: Tag.normalize_name(tag_string))
     end
@@ -41,17 +40,16 @@ module PostSets
       Tag.is_metatag?(Tag.normalize_name(tag_string))
     end
 
-
     def has_explicit?
       !CurrentUser.safe_mode?
     end
 
     def hidden_posts
-      @hidden_posts ||= posts.select { |p| !p.visible? }
+      @hidden_posts ||= posts.reject(&:visible?)
     end
 
     def login_blocked_posts
-      @login_blocked ||= posts.select { |p| p.loginblocked? }
+      @login_blocked_posts ||= posts.select(&:loginblocked?)
     end
 
     def safe_posts
@@ -59,7 +57,7 @@ module PostSets
     end
 
     def per_page
-      (@per_page || Tag.has_metatag?(tag_array, :limit) || CurrentUser.user.per_page).to_i.clamp(0, MAX_PER_PAGE)
+      (@per_page || Tag.has_metatag?(tag_array, :limit) || CurrentUser.user.per_page).to_i.clamp(0, YiffyAPI.config.max_per_page)
     end
 
     def is_random?
@@ -76,10 +74,10 @@ module PostSets
     end
 
     def api_posts
-      _posts = posts
-      fill_children(_posts)
-      fill_tag_types(_posts)
-      _posts
+      posts_ = posts
+      fill_children(posts_)
+      fill_tag_types(posts_)
+      posts_
     end
 
     def hide_from_crawler?
@@ -95,11 +93,11 @@ module PostSets
     end
 
     def is_empty_tag?
-      tag_array.size == 0
+      tag_array.empty?
     end
 
     def is_pattern_search?
-      is_single_tag? && tag_string =~ /\*/ && !tag_array.any? {|x| x =~ /^-?source:.+/}
+      is_single_tag? && tag_string =~ /\*/ && tag_array.none? { |x| x =~ /^-?source:.+/ }
     end
 
     def current_page

@@ -666,6 +666,10 @@ module YiffyAPI
       20
     end
 
+    def max_per_page
+      320
+    end
+
     def is_post_restricted?(_post)
       false
     end

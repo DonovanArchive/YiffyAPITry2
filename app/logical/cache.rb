@@ -25,6 +25,6 @@ class Cache
   end
 
   def self.hash(string)
-    CityHash.hash64(string).to_s(36)
+    CityHash.hash64(string).to_fs(36)
   end
 end

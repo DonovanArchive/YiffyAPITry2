@@ -1,22 +1,19 @@
 class EmailLinkValidator
-  def self.generate(message, purpose, expires = nil)
+  module_function
 
+  def generate(message, purpose, expires = nil)
     validator.generate(message, purpose: purpose, expires_in: expires)
   end
 
-  def self.validate(hash, purpose)
-    begin
-      message = validator.verify(hash, purpose: purpose)
-      return false if message.nil?
-      return message
-    rescue
-      return false
-    end
+  def validate(hash, purpose)
+    message = validator.verify(hash, purpose: purpose)
+    return false if message.nil?
+    message
+  rescue
+    false
   end
 
-  private
-
-  def self.validator
+  def validator
     @validator ||= ActiveSupport::MessageVerifier.new(YiffyAPI.config.email_key, serializer: JSON, digest: "SHA256")
   end
 end

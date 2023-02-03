@@ -40,24 +40,22 @@ class PostQueryBuilder
   end
 
   def escape_string_for_tsquery(array)
-    array.map do |token|
-      token.to_escaped_for_tsquery
-    end
+    array.map(&:to_escaped_for_tsquery)
   end
 
   def add_tag_string_search_relation(tags, relation)
     tag_query_sql = []
 
     if tags[:include].any?
-      tag_query_sql << "(" + escape_string_for_tsquery(tags[:include]).join(" | ") + ")"
+      tag_query_sql << ("(#{escape_string_for_tsquery(tags[:include]).join(' | ')})")
     end
 
     if tags[:related].any?
-      tag_query_sql << "(" + escape_string_for_tsquery(tags[:related]).join(" & ") + ")"
+      tag_query_sql << ("(#{escape_string_for_tsquery(tags[:related]).join(' & ')})")
     end
 
     if tags[:exclude].any?
-      tag_query_sql << "!(" + escape_string_for_tsquery(tags[:exclude]).join(" | ") + ")"
+      tag_query_sql << ("!(#{escape_string_for_tsquery(tags[:exclude]).join(' | ')})")
     end
 
     if tag_query_sql.any?
@@ -67,263 +65,269 @@ class PostQueryBuilder
     relation
   end
 
-  def hide_deleted_posts?(q)
+  def hide_deleted_posts?(query)
     return false if CurrentUser.admin_mode?
-    return false if q[:status].in?(%w[deleted active any all])
-    return false if q[:status_neg].in?(%w[deleted active any all])
+    return false if query[:status].in?(%w[deleted active any all])
+    return false if query[:status_neg].in?(%w[deleted active any all])
     true
   end
 
   def build
     unless query_string.is_a?(Hash)
-      q = Tag.parse_query(query_string)
+      query = Tag.parse_query(query_string)
     end
 
     relation = Post.all
 
-    if q[:tag_count].to_i > YiffyAPI.config.tag_query_limit
-      raise ::Post::SearchError.new("You cannot search for more than #{YiffyAPI.config.tag_query_limit} tags at a time")
+    if query[:tag_count].to_i > YiffyAPI.config.tag_query_limit
+      raise ::Post::SearchError, "You cannot search for more than #{YiffyAPI.config.tag_query_limit} tags at a time"
     end
 
     if CurrentUser.safe_mode?
       relation = relation.where("posts.rating = 's'")
     end
 
-    relation = add_range_relation(q[:post_id], "posts.id", relation)
-    relation = add_range_relation(q[:mpixels], "posts.image_width * posts.image_height / 1000000.0", relation)
-    relation = add_range_relation(q[:ratio], "ROUND(1.0 * posts.image_width / GREATEST(1, posts.image_height), 2)", relation)
-    relation = add_range_relation(q[:width], "posts.image_width", relation)
-    relation = add_range_relation(q[:height], "posts.image_height", relation)
-    relation = add_range_relation(q[:score], "posts.score", relation)
-    relation = add_range_relation(q[:fav_count], "posts.fav_count", relation)
-    relation = add_range_relation(q[:filesize], "posts.file_size", relation)
-    relation = add_range_relation(q[:change_seq], 'posts.change_seq', relation)
-    relation = add_range_relation(q[:date], "posts.created_at", relation)
-    relation = add_range_relation(q[:age], "posts.created_at", relation)
+    relation = add_range_relation(query[:post_id], "posts.id", relation)
+    relation = add_range_relation(query[:mpixels], "posts.image_width * posts.image_height / 1000000.0", relation)
+    relation = add_range_relation(query[:ratio], "ROUND(1.0 * posts.image_width / GREATEST(1, posts.image_height), 2)", relation)
+    relation = add_range_relation(query[:width], "posts.image_width", relation)
+    relation = add_range_relation(query[:height], "posts.image_height", relation)
+    relation = add_range_relation(query[:score], "posts.score", relation)
+    relation = add_range_relation(query[:fav_count], "posts.fav_count", relation)
+    relation = add_range_relation(query[:filesize], "posts.file_size", relation)
+    relation = add_range_relation(query[:change_seq], "posts.change_seq", relation)
+    relation = add_range_relation(query[:date], "posts.created_at", relation)
+    relation = add_range_relation(query[:age], "posts.created_at", relation)
     TagCategory.categories.each do |category|
-      relation = add_range_relation(q["#{category}_tag_count".to_sym], "posts.tag_count_#{category}", relation)
+      relation = add_range_relation(query["#{category}_tag_count".to_sym], "posts.tag_count_#{category}", relation)
     end
-    relation = add_range_relation(q[:post_tag_count], "posts.tag_count", relation)
+    relation = add_range_relation(query[:post_tag_count], "posts.tag_count", relation)
 
     Tag::COUNT_METATAGS.each do |column|
-      relation = add_range_relation(q[column.to_sym], "posts.#{column}", relation)
+      relation = add_range_relation(query[column.to_sym], "posts.#{column}", relation)
     end
 
-    if q[:md5]
-      relation = relation.where("posts.md5": q[:md5])
+    if query[:md5]
+      relation = relation.where("posts.md5": query[:md5])
     end
 
-    if q[:status] == "pending"
+    if query[:status] == "pending"
       relation = relation.where("posts.is_pending = TRUE")
-    elsif q[:status] == "flagged"
+    elsif query[:status] == "flagged"
       relation = relation.where("posts.is_flagged = TRUE")
-    elsif q[:status] == "modqueue"
+    elsif query[:status] == "modqueue"
       relation = relation.where("posts.is_pending = TRUE OR posts.is_flagged = TRUE")
-    elsif q[:status] == "deleted"
+    elsif query[:status] == "deleted"
       relation = relation.where("posts.is_deleted = TRUE")
-    elsif q[:status] == "active"
+    elsif query[:status] == "active"
       relation = relation.where("posts.is_pending = FALSE AND posts.is_deleted = FALSE AND posts.is_flagged = FALSE")
-    elsif q[:status] == "all" || q[:status] == "any"
+    elsif query[:status] == "all" || query[:status] == "any"
       # do nothing
-    elsif q[:status_neg] == "pending"
+    elsif query[:status_neg] == "pending"
       relation = relation.where("posts.is_pending = FALSE")
-    elsif q[:status_neg] == "flagged"
+    elsif query[:status_neg] == "flagged"
       relation = relation.where("posts.is_flagged = FALSE")
-    elsif q[:status_neg] == "modqueue"
+    elsif query[:status_neg] == "modqueue"
       relation = relation.where("posts.is_pending = FALSE AND posts.is_flagged = FALSE")
-    elsif q[:status_neg] == "deleted"
+    elsif query[:status_neg] == "deleted"
       relation = relation.where("posts.is_deleted = FALSE")
-    elsif q[:status_neg] == "active"
+    elsif query[:status_neg] == "active"
       relation = relation.where("posts.is_pending = TRUE OR posts.is_deleted = TRUE OR posts.is_flagged = TRUE")
     end
 
-    if hide_deleted_posts?(q)
+    if hide_deleted_posts?(query)
       relation = relation.where("posts.is_deleted = FALSE")
     end
 
-    if q[:filetype]
-      relation = relation.where("posts.file_ext": q[:filetype])
+    if query[:filetype]
+      relation = relation.where("posts.file_ext": query[:filetype])
     end
 
-    if q[:filetype_neg]
-      relation = relation.where.not("posts.file_ext": q[:filetype_neg])
+    if query[:filetype_neg]
+      relation = relation.where.not("posts.file_ext": query[:filetype_neg])
     end
 
     # The SourcePattern SQL function replaces Pixiv sources with "pixiv/[suffix]", where
     # [suffix] is everything past the second-to-last slash in the URL.  It leaves non-Pixiv
     # URLs unchanged.  This is to ease database load for Pixiv source searches.
-    if q[:source]
-      if q[:source] == "none%"
+    if query[:source]
+      case query[:source]
+      when "none%"
         relation = relation.where("posts.source = ''")
-      elsif q[:source] == "http%"
+      when "http%"
         relation = relation.where("(lower(posts.source) like ?)", "http%")
-      elsif q[:source] =~ /^(?:https?:\/\/)?%\.?pixiv(?:\.net(?:\/img)?)?(?:%\/img\/|%\/|(?=%$))(.+)$/i
-        relation = relation.where("SourcePattern(lower(posts.source)) LIKE lower(?) ESCAPE E'\\\\'", "pixiv/" + $1)
+      when %r{^(?:https?://)?%\.?pixiv(?:\.net(?:/img)?)?(?:%/img/|%/|(?=%$))(.+)$}i
+        relation = relation.where("SourcePattern(lower(posts.source)) LIKE lower(?) ESCAPE E'\\\\'", "pixiv/#{$1}")
       else
-        relation = relation.where("SourcePattern(lower(posts.source)) LIKE SourcePattern(lower(?)) ESCAPE E'\\\\'", q[:source])
+        relation = relation.where("SourcePattern(lower(posts.source)) LIKE SourcePattern(lower(?)) ESCAPE E'\\\\'", query[:source])
       end
     end
 
-    if q[:source_neg]
-      if q[:source_neg] == "none%"
+    if query[:source_neg]
+      case query[:source_neg]
+      when "none%"
         relation = relation.where("posts.source != ''")
-      elsif q[:source_neg] == "http%"
+      when "http%"
         relation = relation.where("(lower(posts.source) not like ?)", "http%")
-      elsif q[:source_neg] =~ /^(?:https?:\/\/)?%\.?pixiv(?:\.net(?:\/img)?)?(?:%\/img\/|%\/|(?=%$))(.+)$/i
-        relation = relation.where("SourcePattern(lower(posts.source)) NOT LIKE lower(?) ESCAPE E'\\\\'", "pixiv/" + $1)
+      when %r{^(?:https?://)?%\.?pixiv(?:\.net(?:/img)?)?(?:%/img/|%/|(?=%$))(.+)$}i
+        relation = relation.where("SourcePattern(lower(posts.source)) NOT LIKE lower(?) ESCAPE E'\\\\'", "pixiv/#{$1}")
       else
-        relation = relation.where("SourcePattern(lower(posts.source)) NOT LIKE SourcePattern(lower(?)) ESCAPE E'\\\\'", q[:source_neg])
+        relation = relation.where("SourcePattern(lower(posts.source)) NOT LIKE SourcePattern(lower(?)) ESCAPE E'\\\\'", query[:source_neg])
       end
     end
 
-    if q[:pool] == "none"
+    case query[:pool]
+    when "none"
       relation = relation.where("posts.pool_string = ''")
-    elsif q[:pool] == "any"
+    when "any"
       relation = relation.where("posts.pool_string != ''")
     end
 
-    if q[:uploader_id_neg]
-      relation = relation.where.not("posts.uploader_id": q[:uploader_id_neg])
+    if query[:uploader_id_neg]
+      relation = relation.where.not("posts.uploader_id": query[:uploader_id_neg])
     end
 
-    if q[:uploader_id]
-      relation = relation.where("posts.uploader_id": q[:uploader_id])
+    if query[:uploader_id]
+      relation = relation.where("posts.uploader_id": query[:uploader_id])
     end
 
-    if q[:approver_id_neg]
-      relation = relation.where.not("posts.approver_id": q[:approver_id_neg])
+    if query[:approver_id_neg]
+      relation = relation.where.not("posts.approver_id": query[:approver_id_neg])
     end
 
-    if q[:approver_id]
-      if q[:approver_id] == "any"
-        relation = relation.where("posts.approver_id is not null")
-      elsif q[:approver_id] == "none"
+    if query[:approver_id]
+      case query[:approver_id]
+      when "any"
+        relation = relation.where.not(posts: { approver_id: nil })
+      when "none"
         relation = relation.where("posts.approver_id is null")
       else
-        relation = relation.where("posts.approver_id": q[:approver_id])
+        relation = relation.where("posts.approver_id": query[:approver_id])
       end
     end
 
-    if q[:commenter_ids]
-      q[:commenter_ids].each do |commenter_id|
-        if commenter_id == "any"
-          relation = relation.where("posts.last_commented_at is not null")
-        elsif commenter_id == "none"
-          relation = relation.where("posts.last_commented_at is null")
-        else
-          relation = relation.where("posts.id": Comment.unscoped.where(creator_id: commenter_id).select(:post_id).distinct)
-        end
+    query[:commenter_ids]&.each do |commenter_id|
+      case commenter_id
+      when "any"
+        relation = relation.where.not(posts: { last_commented_at: nil })
+      when "none"
+        relation = relation.where("posts.last_commented_at is null")
+      else
+        relation = relation.where("posts.id": Comment.unscoped.where(creator_id: commenter_id).select(:post_id).distinct)
       end
     end
 
-    if q[:noter_ids]
-      q[:noter_ids].each do |noter_id|
-        if noter_id == "any"
-          relation = relation.where("posts.last_noted_at is not null")
-        elsif noter_id == "none"
-          relation = relation.where("posts.last_noted_at is null")
-        else
-          relation = relation.where("posts.id": Note.unscoped.where(creator_id: noter_id).select("post_id").distinct)
-        end
+    query[:noter_ids]&.each do |noter_id|
+      case noter_id
+      when "any"
+        relation = relation.where.not(posts: { last_noted_at: nil })
+      when "none"
+        relation = relation.where("posts.last_noted_at is null")
+      else
+        relation = relation.where("posts.id": Note.unscoped.where(creator_id: noter_id).select("post_id").distinct)
       end
     end
 
-    if q[:note_updater_ids]
-      q[:note_updater_ids].each do |note_updater_id|
-        relation = relation.where("posts.id": NoteVersion.unscoped.where(updater_id: note_updater_id).select("post_id").distinct)
-      end
+    query[:note_updater_ids]&.each do |note_updater_id|
+      relation = relation.where("posts.id": NoteVersion.unscoped.where(updater_id: note_updater_id).select("post_id").distinct)
     end
 
-    if q[:post_id_negated]
-      relation = relation.where("posts.id <> ?", q[:post_id_negated])
+    if query[:post_id_negated]
+      relation = relation.where.not(posts: { id: query[:post_id_negated] })
     end
 
-    if q[:parent] == "none"
+    if query[:parent] == "none"
       relation = relation.where("posts.parent_id IS NULL")
-    elsif q[:parent] == "any"
-      relation = relation.where("posts.parent_id IS NOT NULL")
-    elsif q[:parent]
-      relation = relation.where("posts.parent_id = ?", q[:parent].to_i)
+    elsif query[:parent] == "any"
+      relation = relation.where.not(posts: { parent_id: nil })
+    elsif query[:parent]
+      relation = relation.where("posts.parent_id = ?", query[:parent].to_i)
     end
 
-    if q[:parent_neg_ids]
-      neg_ids = q[:parent_neg_ids].map(&:to_i)
+    if query[:parent_neg_ids]
+      neg_ids = query[:parent_neg_ids].map(&:to_i)
       neg_ids.delete(0)
       if neg_ids.present?
         relation = relation.where("posts.id not in (?) and (posts.parent_id is null or posts.parent_id not in (?))", neg_ids, neg_ids)
       end
     end
 
-    if q[:child] == "none"
+    case query[:child]
+    when "none"
       relation = relation.where("posts.has_children = FALSE")
-    elsif q[:child] == "any"
+    when "any"
       relation = relation.where("posts.has_children = TRUE")
     end
 
-    if q[:rating] =~ /^q/
+    case query[:rating]
+    when /^q/
       relation = relation.where("posts.rating = 'q'")
-    elsif q[:rating] =~ /^s/
+    when /^s/
       relation = relation.where("posts.rating = 's'")
-    elsif q[:rating] =~ /^e/
+    when /^e/
       relation = relation.where("posts.rating = 'e'")
     end
 
-    if q[:rating_negated] =~ /^q/
+    case query[:rating_negated]
+    when /^q/
       relation = relation.where("posts.rating <> 'q'")
-    elsif q[:rating_negated] =~ /^s/
+    when /^s/
       relation = relation.where("posts.rating <> 's'")
-    elsif q[:rating_negated] =~ /^e/
+    when /^e/
       relation = relation.where("posts.rating <> 'e'")
     end
 
-    if q[:locked] == "rating"
+    case query[:locked]
+    when "rating"
       relation = relation.where("posts.is_rating_locked = TRUE")
-    elsif q[:locked] == "note" || q[:locked] == "notes"
+    when "note", "notes"
       relation = relation.where("posts.is_note_locked = TRUE")
-    elsif q[:locked] == "status"
+    when "status"
       relation = relation.where("posts.is_status_locked = TRUE")
     end
 
-    if q[:locked_negated] == "rating"
+    case query[:locked_negated]
+    when "rating"
       relation = relation.where("posts.is_rating_locked = FALSE")
-    elsif q[:locked_negated] == "note" || q[:locked_negated] == "notes"
+    when "note", "notes"
       relation = relation.where("posts.is_note_locked = FALSE")
-    elsif q[:locked_negated] == "status"
+    when "status"
       relation = relation.where("posts.is_status_locked = FALSE")
     end
 
-    relation = add_tag_string_search_relation(q[:tags], relation)
+    relation = add_tag_string_search_relation(query[:tags], relation)
 
-    if q[:upvote].present?
-      user_id = q[:upvote]
-      post_ids = PostVote.where(:user_id => user_id).where("score > 0").limit(400).pluck(:post_id)
+    if query[:upvote].present?
+      user_id = query[:upvote]
+      post_ids = PostVote.where(user_id: user_id).where("score > 0").limit(400).pluck(:post_id)
       relation = relation.where("posts.id": post_ids)
     end
 
-    if q[:downvote].present?
-      user_id = q[:downvote]
-      post_ids = PostVote.where(:user_id => user_id).where("score < 0").limit(400).pluck(:post_id)
+    if query[:downvote].present?
+      user_id = query[:downvote]
+      post_ids = PostVote.where(user_id: user_id).where("score < 0").limit(400).pluck(:post_id)
       relation = relation.where("posts.id": post_ids)
     end
 
     # HACK: if we're using a date: or age: metatag, default to ordering by
     # created_at instead of id so that the query will use the created_at index.
-    if q[:date].present? || q[:age].present?
-      case q[:order]
+    if query[:date].present? || query[:age].present?
+      case query[:order]
       when "id", "id_asc"
-        q[:order] = "created_at_asc"
+        query[:order] = "created_at_asc"
       when "id_desc", nil
-        q[:order] = "created_at_desc"
+        query[:order] = "created_at_desc"
       end
     end
 
-    if q[:order] == "rank"
+    case query[:order]
+    when "rank"
       relation = relation.where("posts.score > 0 and posts.created_at >= ?", 2.days.ago)
-    elsif q[:order] == "landscape" || q[:order] == "portrait"
+    when "landscape", "portrait"
       relation = relation.where("posts.image_width IS NOT NULL and posts.image_height IS NOT NULL")
     end
 
-    case q[:order]
+    case query[:order]
     when "id", "id_asc"
       relation = relation.order("posts.id ASC")
 

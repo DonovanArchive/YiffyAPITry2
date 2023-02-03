@@ -2,45 +2,44 @@ class TagCategory
   module Mappings
     # Returns a hash mapping various tag categories to a numerical value.
     def mapping
-      @@mapping ||= Hash[
-        YiffyAPI.config.full_tag_category_mapping.map {|k,v|  v["extra"].map {|y| [y, v["category"]]}}
-                .reduce([],:+)]
-        .update(Hash[YiffyAPI.config.full_tag_category_mapping.map {|k,v|  [v["short"], v["category"]]}])
-        .update( Hash[YiffyAPI.config.full_tag_category_mapping.map {|k,v| [k, v["category"]]}])
+      @@mapping ||= YiffyAPI.config.full_tag_category_mapping.map { |_k, v| v["extra"].map { |k| [k, v["category"]] } }
+                            .reduce([], :+).to_h
+                            .update(YiffyAPI.config.full_tag_category_mapping.to_h { |_k, v| [v["short"], v["category"]] })
+                            .update(YiffyAPI.config.full_tag_category_mapping.transform_values { |v| v["category"] })
     end
 
     # Returns a hash mapping more suited for views
     def canonical_mapping
-      @@canonical_mapping ||= Hash[YiffyAPI.config.full_tag_category_mapping.map {|k,v| [k.capitalize, v["category"]]}]
+      @@canonical_mapping ||= YiffyAPI.config.full_tag_category_mapping.to_h { |k, v| [k.capitalize, v["category"]] }
     end
 
     # Returns a hash mapping numerical category values to their string equivalent.
     def reverse_mapping
-      @@reverse_mapping ||= Hash[YiffyAPI.config.full_tag_category_mapping.map {|k,v| [v["category"], k]}]
+      @@reverse_mapping ||= YiffyAPI.config.full_tag_category_mapping.to_h { |k, v| [v["category"], k] }
     end
 
     # Returns a hash mapping for the short name usage in metatags
     def short_name_mapping
-      @@short_name_mapping ||= Hash[YiffyAPI.config.full_tag_category_mapping.map {|k,v| [v["short"], k]}]
+      @@short_name_mapping ||= YiffyAPI.config.full_tag_category_mapping.to_h { |k, v| [v["short"], k] }
     end
 
     # Returns a hash mapping for humanized_essential_tag_string (models/post.rb)
     def humanized_mapping
-      @@humanized_mapping ||= Hash[YiffyAPI.config.full_tag_category_mapping.map {|k,v| [k, v["humanized"]]}]
+      @@humanized_mapping ||= YiffyAPI.config.full_tag_category_mapping.transform_values { |v| v["humanized"] }
     end
 
     # Returns a hash mapping for post_show_sidebar_tag_list_html (presenters/tag_set_presenter.rb)
     def header_mapping
-      @@header_mapping ||= Hash[YiffyAPI.config.full_tag_category_mapping.map {|k,v| [k, v["header"]]}]
+      @@header_mapping ||= YiffyAPI.config.full_tag_category_mapping.transform_values { |v| v["header"] }
     end
 
     def mod_only_mapping
-      @@mod_only_mapping ||= Hash[YiffyAPI.config.full_tag_category_mapping.map {|k,v| [k, v["mod_only"] || false]}]
+      @@mod_only_mapping ||= YiffyAPI.config.full_tag_category_mapping.transform_values { |v| v["mod_only"] || false }
     end
 
     # A 2d hash of [name, header]
     def name_and_header
-      @@name_and_header = Hash[YiffyAPI.config.full_tag_category_mapping.map {|k,v| [k, v["header"]]}]
+      @@name_and_header = YiffyAPI.config.full_tag_category_mapping.transform_values { |v| v["header"] }
     end
   end
 

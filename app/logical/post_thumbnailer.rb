@@ -1,12 +1,14 @@
 module PostThumbnailer
-  extend self
+  module_function
+
   def generate_resizes(file, height, width, type)
-    if type == :video
+    case type
+    when :video
       video = FFMPEG::Movie.new(file.path)
       crop_file = generate_video_crop_for(video, YiffyAPI.config.small_image_width)
       preview_file = generate_video_preview_for(file.path, YiffyAPI.config.small_image_width)
       sample_file = generate_video_sample_for(file.path)
-    elsif type == :image
+    when :image
       preview_file = DanbooruImageResizer.resize(file, YiffyAPI.config.small_image_width, YiffyAPI.config.small_image_width, 87)
       crop_file = DanbooruImageResizer.crop(file, YiffyAPI.config.small_image_width, YiffyAPI.config.small_image_width, 87)
       if width > YiffyAPI.config.large_image_width
@@ -18,9 +20,10 @@ module PostThumbnailer
   end
 
   def generate_thumbnail(file, type)
-    if type == :video
+    case type
+    when :video
       preview_file = generate_video_preview_for(file.path, YiffyAPI.config.small_image_width)
-    elsif type == :image
+    when :image
       preview_file = DanbooruImageResizer.resize(file, YiffyAPI.config.small_image_width, YiffyAPI.config.small_image_width, 87)
     end
 
@@ -28,33 +31,33 @@ module PostThumbnailer
   end
 
   def generate_video_crop_for(video, width)
-    vp = Tempfile.new(["video-preview", ".jpg"], binmode: true)
-    video.screenshot(vp.path, {:seek_time => 0, :resolution => "#{video.width}x#{video.height}"})
+    vp = Tempfile.new(%w[video-preview .jpg], binmode: true)
+    video.screenshot(vp.path, {seek_time: 0, resolution: "#{video.width}x#{video.height}"})
     crop = DanbooruImageResizer.crop(vp, width, width, 87)
     vp.close
-    return crop
+    crop
   end
 
   def generate_video_preview_for(video, width)
-    output_file = Tempfile.new(["video-preview", ".jpg"], binmode: true)
-    stdout, stderr, status = Open3.capture3(YiffyAPI.config.ffmpeg_path, '-y', '-i', video, '-vf', "thumbnail,scale=#{width}:-1", '-frames:v', '1', output_file.path)
+    output_file = Tempfile.new(%w[video-preview .jpg], binmode: true)
+    stdout, stderr, status = Open3.capture3(YiffyAPI.config.ffmpeg_path, "-y", "-i", video, "-vf", "thumbnail,scale=#{width}:-1", "-frames:v", "1", output_file.path)
 
     unless status == 0
       Rails.logger.warn("[FFMPEG PREVIEW STDOUT] #{stdout.chomp!}")
       Rails.logger.warn("[FFMPEG PREVIEW STDERR] #{stderr.chomp!}")
-      raise CorruptFileError.new("could not generate thumbnail")
+      raise CorruptFileError, "could not generate thumbnail"
     end
     output_file
   end
 
   def generate_video_sample_for(video)
-    output_file = Tempfile.new(["video-sample", ".jpg"], binmode: true)
-    stdout, stderr, status = Open3.capture3(YiffyAPI.config.ffmpeg_path, '-y', '-i', video, '-vf', 'thumbnail', '-frames:v', '1', output_file.path)
+    output_file = Tempfile.new(%w[video-sample .jpg], binmode: true)
+    stdout, stderr, status = Open3.capture3(YiffyAPI.config.ffmpeg_path, "-y", "-i", video, "-vf", "thumbnail", "-frames:v", "1", output_file.path)
 
     unless status == 0
       Rails.logger.warn("[FFMPEG SAMPLE STDOUT] #{stdout.chomp!}")
       Rails.logger.warn("[FFMPEG SAMPLE STDERR] #{stderr.chomp!}")
-      raise CorruptFileError.new("could not generate sample")
+      raise CorruptFileError, "could not generate sample"
     end
     output_file
   end

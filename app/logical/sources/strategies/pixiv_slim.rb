@@ -47,7 +47,7 @@ module Sources
   module Strategies
     class PixivSlim < Base
       def domains
-        ["pixiv.net", "pximg.net"]
+        %w[pixiv.net pximg.net]
       end
 
       def canonical_url

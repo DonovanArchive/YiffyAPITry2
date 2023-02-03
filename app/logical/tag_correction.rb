@@ -4,6 +4,7 @@ class TagCorrection
   include ActiveModel::Serializers::Xml
 
   attr_reader :tag
+
   delegate :category, :post_count, :real_post_count, to: :tag
 
   def initialize(tag_id)

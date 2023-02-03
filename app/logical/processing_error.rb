@@ -1,3 +1,3 @@
-class ProcessingError < Exception
+class ProcessingError < StandardError
 
 end

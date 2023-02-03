@@ -5,7 +5,7 @@
  * Latest version of Docker ([download](https://docs.docker.com/get-docker)). The WSL2 backend on Windows is required.
  * Latest version of Docker Compose ([download](https://docs.docker.com/compose/install))
  * Git ([download](https://git-scm.com/downloads))
- 
+
  If you are on Windows Docker Compose is already included, you do not need to install it yourself.
  If you are on Linux/MacOS you can probably use your package manager.
 
@@ -24,11 +24,11 @@ To mitigate this you can install a WSL distribution and clone the project inside
 1. Uncomment the `COMPOSE_PROFILES` variable if you wish to use solargraph. Doesn't work on Windows without WSL.
 1. Run the following commands:
     ```
-    docker compose run --rm -e SEED_POST_COUNT=100 e621 /app/bin/setup
+    docker compose run --rm -e SEED_POST_COUNT=100 yiffyapi /app/bin/setup
     docker compose up
     ```
     After running the commands once only `docker compose up` is needed to bring up the containers.
-1. To confirm the installation worked, open the web browser of your choice and enter `http://localhost:3000` into the address bar and see if the website loads correctly. An admin account has been created automatically, the username and password are `admin` and `e621test` respectively.
+1. To confirm the installation worked, open the web browser of your choice and enter `http://localhost:3000` into the address bar and see if the website loads correctly. An admin account has been created automatically, the username and password are `admin` and `admin` respectively.
 
 Note: When gems or js packages are updated you need to execute `docker compose build` to reflect them in the container.
 

@@ -28,7 +28,7 @@ module PostSets
     end
 
     def tag_string
-      tag_array.join("")
+      tag_array.join
     end
 
     def humanized_tag_string

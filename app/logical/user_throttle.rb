@@ -39,9 +39,9 @@ class UserThrottle
     t = Time.now
     ckey = current_key(t)
     pkey = previous_key(t)
-    tdiff = t.to_i - ctime(t)*@duration.to_i
+    tdiff = t.to_i - (ctime(t) * @duration.to_i)
     hits = RedisClient.client.mget(ckey, pkey)
-    @cached_rate = (hits[1].to_f * ((@duration.to_i-tdiff)/@duration.to_f) + hits[0].to_f).to_i
+    @cached_rate = ((hits[1].to_f * ((@duration.to_i - tdiff) / @duration.to_f)) + hits[0].to_f).to_i
   end
 
   def hit!
@@ -53,20 +53,20 @@ class UserThrottle
     end
   end
 
-  def current_key(t)
-    "#{throttle_prefix}#{ctime(t)}"
+  def current_key(time)
+    "#{throttle_prefix}#{ctime(time)}"
   end
 
-  def previous_key(t)
-    "#{throttle_prefix}#{ptime(t)}"
+  def previous_key(time)
+    "#{throttle_prefix}#{ptime(time)}"
   end
 
-  def ctime(t)
-    ((t.to_i / @duration.to_i)).to_i
+  def ctime(time)
+    ((time.to_i / @duration.to_i)).to_i
   end
 
-  def ptime(t)
-    ((t.to_i / @duration.to_i) - 1).to_i
+  def ptime(time)
+    ((time.to_i / @duration.to_i) - 1).to_i
   end
 
   def throttle_prefix

@@ -24,57 +24,57 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-require 'securerandom'
-require 'openssl'
-require 'base64'
+require "securerandom"
+require "openssl"
+require "base64"
 
 module Pbkdf2
+  module_function
 
-  PBKDF2_ITERATIONS = 20000
+  PBKDF2_ITERATIONS = 20_000
   SALT_BYTE_SIZE = 24
   HASH_BYTE_SIZE = 24
 
   HASH_SECTIONS = 4
-  SECTION_DELIMITER = ':'
+  SECTION_DELIMITER = ":".freeze
   ITERATIONS_INDEX = 1
   SALT_INDEX = 2
   HASH_INDEX = 3
 
-  def self.create_hash( password )
-    salt = SecureRandom.base64( SALT_BYTE_SIZE )
-    pbkdf2 = OpenSSL::PKCS5::pbkdf2_hmac_sha1(
-        password,
-        salt,
-        PBKDF2_ITERATIONS,
-        HASH_BYTE_SIZE
+  def create_hash(password)
+    salt = SecureRandom.base64(SALT_BYTE_SIZE)
+    pbkdf2 = OpenSSL::PKCS5.pbkdf2_hmac_sha1(
+      password,
+      salt,
+      PBKDF2_ITERATIONS,
+      HASH_BYTE_SIZE,
     )
-    return ["sha1", PBKDF2_ITERATIONS, salt, Base64.encode64( pbkdf2 )].join( SECTION_DELIMITER )
+    ["sha1", PBKDF2_ITERATIONS, salt, Base64.encode64(pbkdf2)].join(SECTION_DELIMITER)
   end
 
-  def self.validate_password( password, correctHash )
-    params = correctHash.split( SECTION_DELIMITER )
+  def validate_password(password, correct_hash)
+    params = correct_hash.split(SECTION_DELIMITER)
     return false if params.length != HASH_SECTIONS
 
-    pbkdf2 = Base64.decode64( params[HASH_INDEX] )
-    testHash = OpenSSL::PKCS5::pbkdf2_hmac_sha1(
-        password,
-        params[SALT_INDEX],
-        params[ITERATIONS_INDEX].to_i,
-        pbkdf2.length
+    pbkdf2 = Base64.decode64(params[HASH_INDEX])
+    test_hash = OpenSSL::PKCS5.pbkdf2_hmac_sha1(
+      password,
+      params[SALT_INDEX],
+      params[ITERATIONS_INDEX].to_i,
+      pbkdf2.length,
     )
 
-    return pbkdf2 == testHash
+    pbkdf2 == test_hash
   end
 
-  def self.needs_upgrade( hash )
-    params = hash.split( SECTION_DELIMITER )
+  def needs_upgrade(hash)
+    params = hash.split(SECTION_DELIMITER)
     if params.length != HASH_SECTIONS
       return true
     end
     if params[ITERATIONS_INDEX] != PBKDF2_ITERATIONS.to_s
       return true
     end
-    return false
+    false
   end
-
 end

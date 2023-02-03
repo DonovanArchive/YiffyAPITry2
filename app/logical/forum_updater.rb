@@ -27,7 +27,7 @@ class ForumUpdater
 
   def update_title(title_tag)
     if forum_topic.title == expected_title
-      forum_topic.update(:title => "[#{title_tag}] #{forum_topic.title}")
+      forum_topic.update(title: "[#{title_tag}] #{forum_topic.title}")
     end
   end
 

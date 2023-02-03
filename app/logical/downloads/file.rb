@@ -1,9 +1,9 @@
 module Downloads
   class File
     include ActiveModel::Validations
-    class Error < Exception ; end
+    class Error < StandardError; end
 
-    RETRIABLE_ERRORS = [Errno::ECONNRESET, Errno::ETIMEDOUT, Errno::EIO, Errno::EHOSTUNREACH, Errno::ECONNREFUSED, Timeout::Error, IOError]
+    RETRIABLE_ERRORS = [Errno::ECONNRESET, Errno::ETIMEDOUT, Errno::EIO, Errno::EHOSTUNREACH, Errno::ECONNREFUSED, Timeout::Error, IOError].freeze
 
     attr_reader :url
 
@@ -20,7 +20,7 @@ module Downloads
       if res.success?
         res.content_length
       else
-        raise HTTParty::ResponseError.new(res)
+        raise HTTParty::ResponseError, res
       end
     end
 
@@ -32,10 +32,10 @@ module Downloads
 
     def validate_url
       errors.add(:base, "URL must not be blank") if url.blank?
-      errors.add(:base, "'#{url}' is not a valid url") if !url.host.present?
-      errors.add(:base, "'#{url}' is not a valid url. Did you mean 'http://#{url}'?") if !url.scheme.in?(%w[http https])
+      errors.add(:base, "'#{url}' is not a valid url") if url.host.blank?
+      errors.add(:base, "'#{url}' is not a valid url. Did you mean 'http://#{url}'?") unless url.scheme.in?(%w[http https])
       valid, reason = UploadWhitelist.is_whitelisted?(url)
-      errors.add(:base, "'#{url}' is not whitelisted and can't be direct downloaded: #{reason}") if !valid
+      errors.add(:base, "'#{url}' is not whitelisted and can't be direct downloaded: #{reason}") unless valid
     end
 
     def http_get_streaming(url, file: Tempfile.new(binmode: true), max_size: YiffyAPI.config.max_file_size)
@@ -43,18 +43,18 @@ module Downloads
 
       res = HTTParty.get(url, httparty_options) do |chunk|
         size += chunk.size
-        raise Error.new("File is too large (max size: #{max_size})") if size > max_size && max_size > 0
+        raise Error, "File is too large (max size: #{max_size})" if size > max_size && max_size > 0
 
         file.write(chunk)
       end
 
       if res.success?
         file.rewind
-        return file
+        file
       else
-        raise Error.new("HTTP error code: #{res.code} #{res.message}")
+        raise Error, "HTTP error code: #{res.code} #{res.message}"
       end
-    end # def
+    end
 
     # Prevent Cloudflare from potentially mangling the image. See issue #3528.
     def uncached_url

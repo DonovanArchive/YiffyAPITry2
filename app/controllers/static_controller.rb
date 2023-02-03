@@ -1,27 +1,27 @@
 class StaticController < ApplicationController
   def privacy
-    @page = WikiPage.find_by(title: "e621:privacy_policy")
+    @page = WikiPage.find_by(title: "help:privacy_policy")
     if @page.nil?
       render "static/404", formats: [:html], status: 404
     end
   end
 
   def terms_of_service
-    @page = WikiPage.find_by(title: "e621:terms_of_service")
+    @page = WikiPage.find_by(title: "help:terms_of_service")
     if @page.nil?
       render "static/404", formats: [:html], status: 404
     end
   end
 
   def contact
-    @page = WikiPage.find_by(title: "e621:contact")
+    @page = WikiPage.find_by(title: "help:contact")
     if @page.nil?
       render "static/404", formats: [:html], status: 404
     end
   end
 
   def takedown
-    @page = WikiPage.find_by(title: "e621:takedown")
+    @page = WikiPage.find_by(title: "help:takedown")
     if @page.nil?
       render "static/404", formats: [:html], status: 404
     end

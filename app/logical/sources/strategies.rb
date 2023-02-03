@@ -1,9 +1,7 @@
 module Sources
   module Strategies
     def self.all
-      [
-        Strategies::PixivSlim
-      ]
+      [Strategies::PixivSlim]
     end
 
     def self.find(url, default: Strategies::Null)

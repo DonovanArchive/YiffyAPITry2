@@ -14,50 +14,50 @@ class ElasticPostQueryBuilder
     when :eq
       if arr[1].is_a?(Time)
         relation.concat([
-                            {range: {field => {gte: arr[1].beginning_of_day}}},
-                            {range: {field => {lte: arr[1].end_of_day}}},
-                        ])
+          { range: { field => { gte: arr[1].beginning_of_day } } },
+          { range: { field => { lte: arr[1].end_of_day } } },
+        ])
       else
-        relation.push({term: {field => arr[1]}})
+        relation.push({ term: { field => arr[1] } })
       end
     when :gt
-      relation.push({range: {field => {gt: arr[1]}}})
+      relation.push({ range: { field => { gt: arr[1] } } })
     when :gte
-      relation.push({range: {field => {gte: arr[1]}}})
+      relation.push({ range: { field => { gte: arr[1] } } })
     when :lt
-      relation.push({range: {field => {lt: arr[1]}}})
+      relation.push({ range: { field => { lt: arr[1] } } })
     when :lte
-      relation.push({range: {field => {lte: arr[1]}}})
+      relation.push({ range: { field => { lte: arr[1] } } })
     when :in
-      relation.push({terms: {field => arr[1]}})
+      relation.push({ terms: { field => arr[1] } })
     when :between
       relation.concat([
-                          {range: {field => {gte: arr[1]}}},
-                          {range: {field => {lte: arr[2]}}},
-                      ])
+        { range: { field => { gte: arr[1] } } },
+        { range: { field => { lte: arr[2] } } },
+      ])
     end
 
     relation
   end
 
   def add_tag_string_search_relation(tags, relation)
-    should = tags[:include].map {|x| {term: {tags: x}}}
-    must = tags[:related].map {|x| {term: {tags: x}}}
-    must_not = tags[:exclude].map {|x| {term: {tags: x}}}
+    should = tags[:include].map { |x| { term: { tags: x } } }
+    must = tags[:related].map { |x| { term: { tags: x } } }
+    must_not = tags[:exclude].map { |x| { term: { tags: x } } }
 
-    search = {bool: {
-        should: should,
-        must: must,
-        must_not: must_not,
-    }}
-    search[:bool][:minimum_should_match] = 1 if should.size > 0
+    search = { bool: {
+      should: should,
+      must: must,
+      must_not: must_not,
+    } }
+    search[:bool][:minimum_should_match] = 1 unless should.empty?
     relation.push(search)
   end
 
-  def hide_deleted_posts?(q)
+  def hide_deleted_posts?(query)
     return false if CurrentUser.admin_mode?
-    return false if q[:status].in?(%w[deleted active any all])
-    return false if q[:status_neg].in?(%w[deleted active any all])
+    return false if query[:status].in?(%w[deleted active any all])
+    return false if query[:status_neg].in?(%w[deleted active any all])
     true
   end
 
@@ -67,7 +67,7 @@ class ElasticPostQueryBuilder
     query = query.gsub(/
       (?<!\\)    # not preceded by a backslash
       (?:\\\\)*  # zero or more escaped backslashes
-      (\*|\?)    # single asterisk or question mark
+      ([*?])    # single asterisk or question mark
     /x, '\\\\\1')
 
     # Then replace any unescaped SQL LIKE characters
@@ -76,19 +76,19 @@ class ElasticPostQueryBuilder
       (?<!\\)    # not preceded by a backslash
       (?:\\\\)*  # zero or more escaped backslashes
       %          # single percent sign
-    /x, '*')
+    /x, "*")
 
     # Collapse runs of wildcards for efficiency
-    query = query.gsub(/(?:\*)+\*/, '*')
+    query = query.gsub(/\*+\*/, "*")
 
-    {wildcard: {field => query}}
+    { wildcard: { field => query } }
   end
 
   def build
     function_score = nil
-    def should(*args)
+    should = lambda do |*args|
       # Explicitly set minimum should match, even though it may not be required in this context.
-      {bool: {minimum_should_match: 1, should: args}}
+      { bool: { minimum_should_match: 1, should: args } }
     end
 
     if query_string.is_a?(Hash)
@@ -98,7 +98,7 @@ class ElasticPostQueryBuilder
     end
 
     if q[:tag_count].to_i > YiffyAPI.config.tag_query_limit
-      raise ::Post::SearchError.new("You cannot search for more than #{YiffyAPI.config.tag_query_limit} tags at a time")
+      raise ::Post::SearchError, "You cannot search for more than #{YiffyAPI.config.tag_query_limit} tags at a time"
     end
 
     must = [] # These terms are ANDed together
@@ -106,7 +106,7 @@ class ElasticPostQueryBuilder
     order = []
 
     if CurrentUser.safe_mode?
-      must.push({term: {rating: "s"}})
+      must.push({ term: { rating: "s" } })
     end
 
     add_range_relation(q[:post_id], :id, must)
@@ -133,165 +133,168 @@ class ElasticPostQueryBuilder
     end
 
     if q[:description]
-      must.push({match: {description: q[:description]}})
+      must.push({ match: { description: q[:description] } })
     end
     if q[:description_neg]
-      must_not.push({match: {description: q[:description_neg]}})
+      must_not.push({ match: { description: q[:description_neg] } })
     end
 
     if q[:md5]
-      must.push(should(*(q[:md5].map {|m| {term: {md5: m}}})))
+      must.push(should(*(q[:md5].map { |m| { term: { md5: m } } })))
     end
 
     if q[:status] == "pending"
-      must.push({term: {pending: true}})
+      must.push({ term: { pending: true } })
     elsif q[:status] == "flagged"
-      must.push({term: {flagged: true}})
+      must.push({ term: { flagged: true } })
     elsif q[:status] == "modqueue"
-      must.push(should({term: {pending: true}}, {term: {flagged: true}}))
+      must.push(should({ term: { pending: true } }, { term: { flagged: true } }))
     elsif q[:status] == "deleted"
-      must.push({term: {deleted: true}})
+      must.push({ term: { deleted: true } })
     elsif q[:status] == "active"
-      must.concat([{term: {pending: false}},
-                   {term: {deleted: false}},
-                   {term: {flagged: false}}])
+      must.concat([
+        { term: { pending: false } },
+        { term: { deleted: false } },
+        { term: { flagged: false } },
+      ])
     elsif q[:status] == "all" || q[:status] == "any"
       # do nothing
     elsif q[:status_neg] == "pending"
-      must_not.push({term: {pending: true}})
+      must_not.push({ term: { pending: true } })
     elsif q[:status_neg] == "flagged"
-      must_not.push({term: {flagged: true}})
+      must_not.push({ term: { flagged: true } })
     elsif q[:status_neg] == "modqueue"
-      must_not.push(should({term: {pending: true}},
-                      {term: {flagged: true}},
-                  ))
+      must_not.push(should.call(
+        { term: { pending: true } },
+        { term: { flagged: true } },
+      ))
     elsif q[:status_neg] == "deleted"
-      must_not.push({term: {deleted: true}})
+      must_not.push({ term: { deleted: true } })
     elsif q[:status_neg] == "active"
-      must.push(should({term: {pending: true}},
-                       {term: {deleted: true}},
-                       {term: {flagged: true}}))
+      must.push(should.call(
+        { term: { pending: true } },
+        { term: { deleted: true } },
+        { term: { flagged: true } },
+      ))
     end
 
     if hide_deleted_posts?(q)
-      must.push({term: {deleted: false}})
+      must.push({ term: { deleted: false } })
     end
 
     if q[:filetype]
-      must.push({term: {file_ext: q[:filetype]}})
+      must.push({ term: { file_ext: q[:filetype] } })
     end
 
     if q[:filetype_neg]
-      must_not.push({term: {file_ext: q[:filetype_neg]}})
+      must_not.push({ term: { file_ext: q[:filetype_neg] } })
     end
 
     if q[:source]
-      if q[:source] == "none%"
-        must_not.push({exists: {field: :source}})
-      elsif q[:source] == "http%"
-        must.push({prefix: {source: "http"}})
+      case q[:source]
+      when "none%"
+        must_not.push({ exists: { field: :source } })
+      when "http%"
+        must.push({ prefix: { source: "http" } })
       else
         must.push(sql_like_to_elastic(:source, q[:source]))
       end
     end
 
     if q[:source_neg]
-      if q[:source_neg] == "none%"
-        must.push({exists: {field: :source}})
-      elsif q[:source_neg] == "http%"
-        must_not.push({prefix: {source: "http"}})
+      case q[:source_neg]
+      when "none%"
+        must.push({ exists: { field: :source } })
+      when "http%"
+        must_not.push({ prefix: { source: "http" } })
       else
         must_not.push(sql_like_to_elastic(:source, q[:source_neg]))
       end
     end
 
-    if q[:pool] == "none"
-      must_not.push({exists: {field: :pools}})
-    elsif q[:pool] == "any"
-      must.push({exists: {field: :pools}})
+    case q[:pool]
+    when "none"
+      must_not.push({ exists: { field: :pools } })
+    when "any"
+      must.push({ exists: { field: :pools } })
     end
 
-    if q[:pools]
-      q[:pools].each do |p|
-        must.push({term: {pools: p}})
-      end
+    q[:pools]&.each do |p|
+      must.push({ term: { pools: p } })
     end
-    if q[:pools_neg]
-      q[:pools_neg].each do |p|
-        must_not.push({term: {pools: p}})
-      end
+    q[:pools_neg]&.each do |p|
+      must_not.push({ term: { pools: p } })
     end
 
     if q[:sets]
-      must.concat(q[:sets].map {|x| {term: {sets: x}}})
+      must.concat(q[:sets].map { |x| { term: { sets: x } } })
     end
     if q[:sets_neg]
-      must_not.concat(q[:sets_neg].map {|x| {term: {sets: x}}})
+      must_not.concat(q[:sets_neg].map { |x| { term: { sets: x } } })
     end
 
     if q[:fav_ids]
-      must.concat(q[:fav_ids].map {|x| {term: {faves: x}}})
+      must.concat(q[:fav_ids].map { |x| { term: { faves: x } } })
     end
     if q[:fav_ids_neg]
-      must_not.concat(q[:fav_ids_neg].map {|x| {term: {faves: x}}})
+      must_not.concat(q[:fav_ids_neg].map { |x| { term: { faves: x } } })
     end
 
     if q[:uploader_id_neg]
-      must_not.concat(q[:uploader_id_neg].map {|x| {term: {uploader: x.to_i}}})
+      must_not.concat(q[:uploader_id_neg].map { |x| { term: { uploader: x.to_i } } })
     end
 
     if q[:uploader_id]
-      must.push({term: {uploader: q[:uploader_id].to_i}})
+      must.push({ term: { uploader: q[:uploader_id].to_i } })
     end
 
     if q[:approver_id_neg]
-      must_not.concat(q[:approver_id_neg].map {|x| {term: {approver: x.to_i}}})
+      must_not.concat(q[:approver_id_neg].map { |x| { term: { approver: x.to_i } } })
     end
 
     if q[:approver_id]
-      if q[:approver_id] == "any"
-        must.push({exists: {field: :approver}})
-      elsif q[:approver_id] == "none"
-        must_not.push({exists: {field: :approver}})
+      case q[:approver_id]
+      when "any"
+        must.push({ exists: { field: :approver } })
+      when "none"
+        must_not.push({ exists: { field: :approver } })
       else
-        must.push({term: {approver: q[:approver_id].to_i}})
+        must.push({ term: { approver: q[:approver_id].to_i } })
       end
     end
 
-    if q[:commenter_ids]
-      q[:commenter_ids].each do |commenter_id|
-        if commenter_id == "any"
-          must.push({exists: {field: :commenters}})
-        elsif commenter_id == "none"
-          must_not.push({exists: {field: :commenters}})
-        else
-          must.concat(q[:commenter_ids].map {|x| {term: {commenters: x.to_i}}} )
-        end
+    q[:commenter_ids]&.each do |commenter_id|
+      case commenter_id
+      when "any"
+        must.push({ exists: { field: :commenters } })
+      when "none"
+        must_not.push({ exists: { field: :commenters } })
+      else
+        must.concat(q[:commenter_ids].map { |x| { term: { commenters: x.to_i } } })
       end
     end
 
-    if q[:noter_ids]
-      q[:noter_ids].each do |noter_id|
-        if noter_id == "any"
-          must.push({exists: {field: :noters}})
-        elsif noter_id == "none"
-          must_not.push({exists: {field: :noters}})
-        else
-          must.concat(q[:noter_ids].map {|x| {term: {noters: x.to_i}}} )
-        end
+    q[:noter_ids]&.each do |noter_id|
+      case noter_id
+      when "any"
+        must.push({ exists: { field: :noters } })
+      when "none"
+        must_not.push({ exists: { field: :noters } })
+      else
+        must.concat(q[:noter_ids].map { |x| { term: { noters: x.to_i } } })
       end
     end
 
     if q[:note_updater_ids]
-      must.concat(q[:note_updater_ids].map {|x| {term: {noters: x.to_i}}} )
+      must.concat(q[:note_updater_ids].map { |x| { term: { noters: x.to_i } } })
     end
 
     if q[:note]
-      must.push({match: {notes: q[:note]}})
+      must.push({ match: { notes: q[:note] } })
     end
 
     if q[:note_neg]
-      must_not.push({match: {notes: q[:note_neg]}})
+      must_not.push({ match: { notes: q[:note_neg] } })
     end
 
     if q[:delreason]
@@ -303,299 +306,311 @@ class ElasticPostQueryBuilder
     end
 
     if q[:deleter]
-      must.push({term: {deleter: q[:deleter].to_i}})
+      must.push({ term: { deleter: q[:deleter].to_i } })
     end
 
     if q[:deleter_neg]
-      must_not.push({term: {deleter: q[:deleter].to_i}})
+      must_not.push({ term: { deleter: q[:deleter].to_i } })
     end
 
     if q[:post_id_negated]
-      must_not.push({term: {id: q[:post_id_negated].to_i}})
+      must_not.push({ term: { id: q[:post_id_negated].to_i } })
     end
 
     if q[:parent] == "none"
-      must_not.push({exists: {field: :parent}})
+      must_not.push({ exists: { field: :parent } })
     elsif q[:parent] == "any"
-      must.push({exists: {field: :parent}})
+      must.push({ exists: { field: :parent } })
     elsif q[:parent]
-      must.push({term: {parent: q[:parent].to_i}})
+      must.push({ term: { parent: q[:parent].to_i } })
     end
 
     if q[:parent_neg_ids]
       neg_ids = q[:parent_neg_ids].map(&:to_i)
       neg_ids.delete(0)
       if neg_ids.present?
-        must_not.push(should(*(neg_ids.map {|p| {term: {parent: p}}})))
+        must_not.push(should(*(neg_ids.map { |p| { term: { parent: p } } })))
       end
     end
 
-    if q[:child] == "none"
-      must.push({term: {has_children: false}})
-    elsif q[:child] == "any"
-      must.push({term: {has_children: true}})
+    case q[:child]
+    when "none"
+      must.push({ term: { has_children: false } })
+    when "any"
+      must.push({ term: { has_children: true } })
     end
 
-    if q[:rating] =~ /\Aq/
-      must.push({term: {rating: "q"}})
-    elsif q[:rating] =~ /\As/
-      must.push({term: {rating: "s"}})
-    elsif q[:rating] =~ /\Ae/
-      must.push({term: {rating: "e"}})
+    case q[:rating]
+    when /\Aq/
+      must.push({ term: { rating: "q" } })
+    when /\As/
+      must.push({ term: { rating: "s" } })
+    when /\Ae/
+      must.push({ term: { rating: "e" } })
     end
 
-    if q[:rating_negated] =~ /\Aq/
-      must_not.push({term: {rating: "q"}})
-    elsif q[:rating_negated] =~ /\As/
-      must_not.push({term: {rating: "s"}})
-    elsif q[:rating_negated] =~ /\Ae/
-      must_not.push({term: {rating: "e"}})
+    case q[:rating_negated]
+    when /\Aq/
+      must_not.push({ term: { rating: "q" } })
+    when /\As/
+      must_not.push({ term: { rating: "s" } })
+    when /\Ae/
+      must_not.push({ term: { rating: "e" } })
     end
 
-    if q[:locked] == "rating"
-      must.push({term: {rating_locked: true}})
-    elsif q[:locked] == "note" || q[:locked] == "notes"
-      must.push({term: {note_locked: true}})
-    elsif q[:locked] == "status"
-      must.push({term: {status_locked: true}})
+    case q[:locked]
+    when "rating"
+      must.push({ term: { rating_locked: true } })
+    when "note", "notes"
+      must.push({ term: { note_locked: true } })
+    when "status"
+      must.push({ term: { status_locked: true } })
     end
 
-    if q[:locked_negated] == "rating"
-      must.push({term: {rating_locked: false}})
-    elsif q[:locked_negated] == "note" || q[:locked_negated] == "notes"
-      must.push({term: {note_locked: false}})
-    elsif q[:locked_negated] == "status"
-      must.push({term: {status_locked: false}})
+    case q[:locked_negated]
+    when "rating"
+      must.push({ term: { rating_locked: false } })
+    when "note", "notes"
+      must.push({ term: { note_locked: false } })
+    when "status"
+      must.push({ term: { status_locked: false } })
     end
 
     if q.include?(:ratinglocked)
-      must.push({term: {rating_locked: q[:ratinglocked]}})
+      must.push({ term: { rating_locked: q[:ratinglocked] } })
     end
 
     if q.include?(:notelocked)
-      must.push({term: {note_locked: q[:notelocked]}})
+      must.push({ term: { note_locked: q[:notelocked] } })
     end
 
     if q.include?(:statuslocked)
-      must.push({term: {status_locked: q[:statuslocked]}})
+      must.push({ term: { status_locked: q[:statuslocked] } })
     end
 
     if q.include?(:hassource)
-      (q[:hassource] ? must : must_not).push({exists: {field: :source}})
+      (q[:hassource] ? must : must_not).push({ exists: { field: :source } })
     end
 
     if q.include?(:hasdescription)
-      (q[:hasdescription] ? must : must_not).push({exists: {field: :description}})
+      (q[:hasdescription] ? must : must_not).push({ exists: { field: :description } })
     end
 
     if q.include?(:ischild)
-      (q[:ischild] ? must : must_not).push({exists: {field: :parent}})
+      (q[:ischild] ? must : must_not).push({ exists: { field: :parent } })
     end
 
     if q.include?(:isparent)
-      must.push({term: {has_children: q[:isparent]}})
+      must.push({ term: { has_children: q[:isparent] } })
     end
 
     if q.include?(:inpool)
-      (q[:inpool] ? must : must_not).push({exists: {field: :pools}})
+      (q[:inpool] ? must : must_not).push({ exists: { field: :pools } })
     end
 
     if q.include?(:pending_replacements)
-      must.push({term: {has_pending_replacements: q[:pending_replacements]}})
+      must.push({ term: { has_pending_replacements: q[:pending_replacements] } })
     end
 
     add_tag_string_search_relation(q[:tags], must)
 
     if q[:upvote].present?
-      must.push({term: {upvotes: q[:upvote].to_i}})
+      must.push({ term: { upvotes: q[:upvote].to_i } })
     end
 
     if q[:downvote].present?
-      must.push({term: {downvotes: q[:downvote].to_i}})
+      must.push({ term: { downvotes: q[:downvote].to_i } })
     end
 
     if q[:voted].present?
-      must.push(should({term: {upvotes: q[:voted].to_i}},
-                       {term: {downvotes: q[:voted].to_i}}))
+      must.push(should({ term: { upvotes: q[:voted].to_i } },
+                       { term: { downvotes: q[:voted].to_i } }))
     end
     if q[:neg_upvote].present?
-      must_not.push({term: {upvotes: q[:neg_upvote].to_i}})
+      must_not.push({ term: { upvotes: q[:neg_upvote].to_i } })
     end
 
     if q[:neg_downvote].present?
-      must_not.push({term: {downvotes: q[:neg_downvote].to_i}})
+      must_not.push({ term: { downvotes: q[:neg_downvote].to_i } })
     end
 
     if q[:neg_voted].present?
-      must_not.concat([{term: {upvotes: q[:neg_voted].to_i}},
-                       {term: {downvotes: q[:neg_voted].to_i}}])
+      must_not.concat([{ term: { upvotes: q[:neg_voted].to_i } },
+                       { term: { downvotes: q[:neg_voted].to_i } },])
     end
 
-    if q[:order] == "rank"
-      must.push({range: {score: {gt: 0}}})
-      must.push({range: {created_at: {gte: 2.days.ago}}})
-    elsif q[:order] == "landscape" || q[:order] == "portrait" ||
-        q[:order] == "mpixels" || q[:order] == "mpixels_desc"
-      must.push({exists: {field: :width}})
-      must.push({exists: {field: :height}})
+    case q[:order]
+    when "rank"
+      must.push({ range: { score: { gt: 0 } } })
+      must.push({ range: { created_at: { gte: 2.days.ago } } })
+    when "landscape", "portrait", "mpixels", "mpixels_desc"
+      must.push({ exists: { field: :width } })
+      must.push({ exists: { field: :height } })
     end
 
     case q[:order]
     when "id", "id_asc"
-      order.push({id: :asc})
+      order.push({ id: :asc })
 
-    when "id_desc"
-      order.push({id: :desc})
+    # when "id_desc"
+    #  order.push({ id: :desc })
 
     when "change", "change_desc"
-      order.push({change_seq: :desc})
+      order.push({ change_seq: :desc })
 
     when "change_asc"
-      order.push({change_seq: :asc})
+      order.push({ change_seq: :asc })
 
     when "md5"
-      order.push({md5: :desc})
+      order.push({ md5: :desc })
 
     when "md5_asc"
-      order.push({md5: :asc})
+      order.push({ md5: :asc })
 
     when "score", "score_desc"
-      order.concat([{score: :desc}, {id: :desc}])
+      order.concat([{ score: :desc }, { id: :desc }])
 
     when "score_asc"
-      order.concat([{score: :asc}, {id: :asc}])
+      order.concat([{ score: :asc }, { id: :asc }])
 
     when "duration", "duration_desc"
-      order.concat([{duration: :desc}, {id: :desc}])
+      order.concat([{ duration: :desc }, { id: :desc }])
 
     when "duration_asc"
-      order.concat([{duration: :asc}, {id: :asc}])
+      order.concat([{ duration: :asc }, { id: :asc }])
 
     when "favcount"
-      order.concat([{fav_count: :desc}, {id: :desc}])
+      order.concat([{ fav_count: :desc }, { id: :desc }])
 
     when "favcount_asc"
-      order.concat([{fav_count: :asc}, {id: :asc}])
+      order.concat([{ fav_count: :asc }, { id: :asc }])
 
     when "created_at", "created_at_desc"
-      order.push({created_at: :desc})
+      order.push({ created_at: :desc })
 
     when "created_at_asc"
-      order.push({created_at: :asc})
+      order.push({ created_at: :asc })
 
     when "updated", "updated_desc"
-      order.concat([{updated_at: :desc}, {id: :desc}])
+      order.concat([{ updated_at: :desc }, { id: :desc }])
 
     when "updated_asc"
-      order.concat([{updated_at: :asc}, {id: :asc}])
+      order.concat([{ updated_at: :asc }, { id: :asc }])
 
     when "comment", "comm"
-      order.push({commented_at: {order: :desc, missing: :_last}})
-      order.push({id: :desc})
+      order.push({ commented_at: { order: :desc, missing: :_last } })
+      order.push({ id: :desc })
 
     when "comment_bumped"
-      must.push({exists: {field: 'comment_bumped_at'}})
-      order.push({comment_bumped_at: {order: :desc, missing: :_last}})
-      order.push({id: :desc})
+      must.push({ exists: { field: "comment_bumped_at" } })
+      order.push({ comment_bumped_at: { order: :desc, missing: :_last } })
+      order.push({ id: :desc })
 
     when "comment_bumped_asc"
-      must.push({exists: {field: 'comment_bumped_at'}})
-      order.push({comment_bumped_at: {order: :asc, missing: :_last}})
-      order.push({id: :desc})
+      must.push({ exists: { field: "comment_bumped_at" } })
+      order.push({ comment_bumped_at: { order: :asc, missing: :_last } })
+      order.push({ id: :desc })
 
     when "comment_asc", "comm_asc"
-      order.push({commented_at: {order: :asc, missing: :_last}})
-      order.push({id: :asc})
+      order.push({ commented_at: { order: :asc, missing: :_last } })
+      order.push({ id: :asc })
 
     when "note"
-      order.push({noted_at: {order: :desc, missing: :_last}})
+      order.push({ noted_at: { order: :desc, missing: :_last } })
 
     when "note_asc"
-      order.push({noted_at: {order: :asc, missing: :_first}})
+      order.push({ noted_at: { order: :asc, missing: :_first } })
 
     when "mpixels", "mpixels_desc"
-      order.push({mpixels: :desc})
+      order.push({ mpixels: :desc })
 
     when "mpixels_asc"
-      order.push({mpixels: :asc})
+      order.push({ mpixels: :asc })
 
     when "portrait"
-      order.push({aspect_ratio: :asc})
+      order.push({ aspect_ratio: :asc })
 
     when "landscape"
-      order.push({aspect_ratio: :desc})
+      order.push({ aspect_ratio: :desc })
 
     when "filesize", "filesize_desc"
-      order.push({file_size: :desc})
+      order.push({ file_size: :desc })
 
     when "filesize_asc"
-      order.push({file_size: :asc})
+      order.push({ file_size: :asc })
 
     when /\A(?<column>#{Tag::COUNT_METATAGS.join("|")})(_(?<direction>asc|desc))?\z/i
       column = Regexp.last_match[:column]
       direction = Regexp.last_match[:direction] || "desc"
-      order.concat([{column => direction}, {id: direction}])
+      order.concat([{ column => direction }, { id: direction }])
 
     when "tagcount", "tagcount_desc"
-      order.push({tag_count: :desc})
+      order.push({ tag_count: :desc })
 
     when "tagcount_asc"
-      order.push({tag_count: :asc})
+      order.push({ tag_count: :asc })
 
     when /(#{TagCategory.short_name_regex})tags(?:\Z|_desc)/
-      order.push({"tag_count_#{TagCategory.short_name_mapping[$1]}" => :desc})
+      order.push({ "tag_count_#{TagCategory.short_name_mapping[$1]}" => :desc })
 
     when /(#{TagCategory.short_name_regex})tags_asc/
-      order.push({"tag_count_#{TagCategory.short_name_mapping[$1]}" => :asc})
+      order.push({ "tag_count_#{TagCategory.short_name_mapping[$1]}" => :asc })
 
     when "rank"
-      must.push({function_score: {
-          query: {match_all: {}},
+      must.push({
+        function_score: {
+          query: { match_all: {} },
           script_score: {
-              script: {
-                  params: {log3: Math.log(3), date2005_05_24: 1116936000},
-                  source: "Math.log(doc['score'].value) / params.log3 + (doc['created_at'].value.millis / 1000 - params.date2005_05_24) / 35000",
-              },
+            script: {
+              # 2005 05 24
+              params: { log3: Math.log(3), date: 1_116_936_000 },
+              source: "Math.log(doc['score'].value) / params.log3 + (doc['created_at'].value.millis / 1000 - params.date) / 35000",
+            },
           },
-      }})
+        },
+      })
 
-      order.push({_score: :desc})
+      order.push({ _score: :desc })
 
     when "random"
       if q[:random].present?
-        function_score = {function_score: {
-            query: {match_all: {}},
-            random_score: {seed: q[:random].to_i, field: 'id'},
-            boost_mode: :replace
-        }}
+        function_score = {
+          function_score: {
+            query: { match_all: {} },
+            random_score: { seed: q[:random].to_i, field: "id" },
+            boost_mode: :replace,
+          },
+        }
       else
-        function_score = {function_score: {
-            query: {match_all: {}},
+        function_score = {
+          function_score: {
+            query: { match_all: {} },
             random_score: {},
-            boost_mode: :replace
-        }}
+            boost_mode: :replace,
+          },
+        }
       end
 
-      order.push({_score: :desc})
+      order.push({ _score: :desc })
 
     else
-      order.push({id: :desc})
+      order.push({ id: :desc })
     end
 
     if must.empty?
-      must.push({match_all: {}})
+      must.push({ match_all: {} })
     end
 
-    query = {bool: {must: must, must_not: must_not}}
+    query = { bool: { must: must, must_not: must_not } }
     if function_score.present?
       function_score[:function_score][:query] = query
       query = function_score
     end
     search_body = {
-        query: query,
-        sort: order,
-        _source: false,
-        timeout: "#{CurrentUser.user.try(:statement_timeout) || 3_000}ms"
+      query: query,
+      sort: order,
+      _source: false,
+      timeout: "#{CurrentUser.user.try(:statement_timeout) || 3_000}ms",
     }
 
     Post.__elasticsearch__.search(search_body)

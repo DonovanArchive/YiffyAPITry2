@@ -48,7 +48,7 @@ module YiffyAPI
 
       def records_per_page
         limit = @paginator_options.try(:[], :limit) || YiffyAPI.config.posts_per_page
-        [limit.to_i, 320].min
+        [limit.to_i, YiffyAPI.config.max_per_page].min
       end
 
       # When paginating large tables, we want to avoid doing an expensive count query

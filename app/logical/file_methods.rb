@@ -42,7 +42,7 @@ module FileMethods
   end
 
   def is_ai_generated?(file_path)
-    return false if !is_image?
+    return false unless is_image?
 
     image = Vips::Image.new_from_file(file_path)
     fetch = lambda do |key|
@@ -55,7 +55,7 @@ module FileMethods
     return true if fetch.call("png-comment-0-parameters").present?
     return true if fetch.call("png-comment-0-Dream").present?
     return true if fetch.call("exif-ifd0-Software").include?("NovelAI") || fetch.call("png-comment-2-Software").include?("NovelAI")
-    return true if ["exif-ifd0-ImageDescription", "exif-ifd2-UserComment", "png-comment-4-Comment"].any? { |field| fetch.call(field).include?('"sampler": "') }
+    return true if %w[exif-ifd0-ImageDescription exif-ifd2-UserComment png-comment-4-Comment].any? { |field| fetch.call(field).include?('"sampler": "') }
     exif_data = fetch.call("exif-data")
     return true if ["Model hash", "OpenAI", "NovelAI"].any? { |marker| exif_data.include?(marker) }
     false

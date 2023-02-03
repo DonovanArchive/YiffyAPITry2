@@ -134,3 +134,12 @@ Style/TrailingCommaInArrayLiteral:
 
 Style/TrailingCommaInHashLiteral:
   EnforcedStyleForMultiline: consistent_comma
+
+Layout/FirstArgumentIndentation:
+  Enabled: false
+
+Style/RescueStandardError:
+  Enabled: false
+
+Metrics/ParameterLists:
+  Enabled: false

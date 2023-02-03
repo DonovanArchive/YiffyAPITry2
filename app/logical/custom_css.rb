@@ -4,7 +4,7 @@ module CustomCss
       if line =~ /\A@import/
         line
       else
-        line.gsub(/([^[:space:]])[[:space:]]*(?:!important)?[[:space:]]*(;|})/, "\\1 !important\\2")
+        line.gsub(/([^[:space:]])[[:space:]]*(?:!important)?[[:space:]]*([;}])/, "\\1 !important\\2")
       end
     end.join("\n")
   end

@@ -93,7 +93,7 @@ module Sources
       # Subclasses should merge in any required headers needed to access resources
       # on the site.
       def headers
-        return YiffyAPI.config.http_headers
+        YiffyAPI.config.http_headers
       end
 
       # Returns the size of the image resource without actually downloading the file.
@@ -114,7 +114,7 @@ module Sources
         (@tags || []).uniq
       end
 
-      def to_json
+      def to_json(*_args)
         to_h.to_json
       end
     end

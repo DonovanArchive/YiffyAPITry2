@@ -4,7 +4,7 @@ module CloudflareService
       resp = HTTParty.get("https://api.cloudflare.com/client/v4/ips", YiffyAPI.config.httparty_options)
       [resp.body, resp.code]
     end
-    return [] if code != 200
+    return [] unless code == 200
 
     json = JSON.parse(text, symbolize_names: true)
     ips = json[:result][:ipv4_cidrs] + json[:result][:ipv6_cidrs]

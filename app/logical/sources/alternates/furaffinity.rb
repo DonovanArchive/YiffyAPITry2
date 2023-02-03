@@ -9,7 +9,7 @@ module Sources
       end
 
       def domains
-        ["furaffinity.net", "facdn.net"]
+        %w[furaffinity.net facdn.net]
       end
 
       def parse

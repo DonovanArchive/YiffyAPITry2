@@ -6,7 +6,7 @@ class BulkRelatedTagQuery
 
   def initialize(query: nil, category: nil, user: nil)
     @user = user
-    @query = Tag.normalize_query(query).split(' ').slice(0, 25)
+    @query = Tag.normalize_query(query).split.first(25)
     @category = category
   end
 
@@ -31,7 +31,7 @@ class BulkRelatedTagQuery
       related = tag.related_tag_array
       categories = Tag.categories_for(related.map(&:first))
 
-      hash[tag.name] = related.map {|name, count| [name, count.to_i, categories.fetch(name, -1)]}
+      hash[tag.name] = related.map { |name, count| [name, count.to_i, categories.fetch(name, -1)] }
     end
   end
 
@@ -43,7 +43,7 @@ class BulkRelatedTagQuery
         related = RelatedTagCalculator.calculate_from_sample_to_array(tag, cat)
         categories = Tag.categories_for(related.map(&:first))
 
-        hash[tag] = related.map {|name, count| [name, count.to_i, categories.fetch(name, -1)]}
+        hash[tag] = related.map { |name, count| [name, count.to_i, categories.fetch(name, -1)] }
       end
     end
   end

@@ -1,9 +1,9 @@
 class UploadService
   module Utils
-    extend self
+    module_function
     class CorruptFileError < RuntimeError; end
 
-    IMAGE_TYPES = %i[original large preview crop]
+    IMAGE_TYPES = %i[original large preview crop].freeze
 
     def delete_file(md5, file_ext, upload_id = nil)
       if Post.where(md5: md5).exists?

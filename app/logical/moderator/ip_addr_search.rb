@@ -26,34 +26,45 @@ module Moderator
 
     private
 
-    def search_by_ip_addr(ip_addrs, with_history)
-      def add_by_ip_addr(target, name, ips, klass, ip_field, id_field)
+    def add_by(type, value, with_history)
+      add_by_ip_addr = lambda do |target, name, ips, klass, ip_field, id_field|
         if ips.size == 1
-          target.merge!({name => klass.where("#{ip_field} <<= ?", ips[0]).group(id_field).count})
+          target.merge!({ name => klass.where("#{ip_field} <<= ?", ips[0]).group(id_field).count })
         else
-          target.merge!({name => klass.where(ip_field => ips).group(id_field).count})
+          target.merge!({ name => klass.where(ip_field => ips).group(id_field).count })
         end
       end
 
-      sums = {}
-      add_by_ip_addr(sums, :comment, ip_addrs, ::Comment, :creator_ip_addr, :creator_id)
-      add_by_ip_addr(sums, :dmail, ip_addrs, ::Dmail, :creator_ip_addr, :from_id)
-      add_by_ip_addr(sums, :blip, ip_addrs, ::Blip, :creator_ip_addr, :creator_id)
-      add_by_ip_addr(sums, :post_flag, ip_addrs, ::PostFlag, :creator_ip_addr, :creator_id)
-      add_by_ip_addr(sums, :posts, ip_addrs, ::Post, :uploader_ip_addr, :uploader_id)
-      add_by_ip_addr(sums, :last_login, ip_addrs, ::User, :last_ip_addr, :id)
-
-      if with_history
-        add_by_ip_addr(sums, :artist_version, ip_addrs, ::ArtistVersion, :updater_ip_addr, :updater_id)
-        add_by_ip_addr(sums, :note_version, ip_addrs, ::NoteVersion, :updater_ip_addr, :updater_id)
-        add_by_ip_addr(sums, :pool_version, ip_addrs, ::PoolVersion, :updater_ip_addr, :updater_id)
-        add_by_ip_addr(sums, :post_version, ip_addrs, ::PostVersion, :updater_ip_addr, :updater_id)
-        add_by_ip_addr(sums, :wiki_page_version, ip_addrs, ::WikiPageVersion, :updater_ip_addr, :updater_id)
+      add_by_user_id = lambda do |target, name, ids, klass, ip_field, id_field|
+        target.merge!({ name => klass.where(id_field => ids).where.not(ip_field => nil).group(ip_field).count })
       end
 
+      method = type == :ip_addr ? add_by_ip_addr : add_by_user_id
+      sums = {}
+      method.call(sums, :comment, value, ::Comment, :creator_ip_addr, :creator_id)
+      method.call(sums, :dmail, value, ::Dmail, :creator_ip_addr, :from_id)
+      method.call(sums, :blip, value, ::Blip, :creator_ip_addr, :creator_id)
+      method.call(sums, :post_flag, value, ::PostFlag, :creator_ip_addr, :creator_id)
+      method.call(sums, :posts, value, ::Post, :uploader_ip_addr, :uploader_id)
+      method.call(sums, :last_login, value, ::User, :last_ip_addr, :id)
+
+      if with_history
+        method.call(sums, :artist_version, value, ::ArtistVersion, :updater_ip_addr, :updater_id)
+        method.call(sums, :note_version, value, ::NoteVersion, :updater_ip_addr, :updater_id)
+        method.call(sums, :pool_version, value, ::PoolVersion, :updater_ip_addr, :updater_id)
+        method.call(sums, :post_version, value, ::PostVersion, :updater_ip_addr, :updater_id)
+        method.call(sums, :wiki_page_version, value, ::WikiPageVersion, :updater_ip_addr, :updater_id)
+      end
+
+      sums
+    end
+
+    def search_by_ip_addr(ip_addrs, with_history)
+      sums = add_by(:ip_addr, ip_addrs, with_history)
+
       user_ids = sums.map { |_, v| v.map { |k, _| k } }.reduce([]) { |ids, id| ids + id }.uniq
-      users = ::User.where(id: user_ids).map { |u| [u.id, u] }.to_h
-      {sums: sums, users: users}
+      users = ::User.where(id: user_ids).index_by(&:id)
+      { sums: sums, users: users }
     end
 
     def search_by_user_name(user_names, with_history)
@@ -62,28 +73,10 @@ module Moderator
     end
 
     def search_by_user_id(user_ids, with_history)
-      def add_by_user_id(target, name, ids, klass, ip_field, id_field)
-          target.merge!({name => klass.where(id_field => ids).where.not(ip_field => nil).group(ip_field).count})
-      end
-
-      sums = {}
-      add_by_user_id(sums, :comment, user_ids, ::Comment, :creator_ip_addr, :creator_id)
-      add_by_user_id(sums, :dmail, user_ids, ::Dmail, :creator_ip_addr, :from_id)
-      add_by_user_id(sums, :blip, user_ids, ::Blip, :creator_ip_addr, :creator_id)
-      add_by_user_id(sums, :post_flag, user_ids, ::PostFlag, :creator_ip_addr, :creator_id)
-      add_by_user_id(sums, :posts, user_ids, ::Post, :uploader_ip_addr, :uploader_id)
-      add_by_user_id(sums, :users, user_ids, ::User, :last_ip_addr, :id)
-
-      if with_history
-        add_by_user_id(sums, :artist_version, user_ids, ::ArtistVersion, :updater_ip_addr, :updater_id)
-        add_by_user_id(sums, :note_version, user_ids, ::NoteVersion, :updater_ip_addr, :updater_id)
-        add_by_user_id(sums, :pool_version, user_ids, ::PoolVersion, :updater_ip_addr, :updater_id)
-        add_by_user_id(sums, :post_version, user_ids, ::PostVersion, :updater_ip_addr, :updater_id)
-        add_by_user_id(sums, :wiki_page_version, user_ids, ::WikiPageVersion, :updater_ip_addr, :updater_id)
-      end
+      sums = add_by(:user_id, user_ids, with_history)
 
       ip_addrs = sums.map { |_, v| v.map { |k, _| k } }.reduce([]) { |ids, id| ids + id }.uniq
-      {sums: sums, ip_addrs: ip_addrs}
+      { sums: sums, ip_addrs: ip_addrs }
     end
   end
 end

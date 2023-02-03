@@ -9,7 +9,7 @@ class UserEmailChange
 
   def process
     if user.is_blocked?
-      raise ::User::PrivilegeError.new("Cannot change email while banned")
+      raise ::User::PrivilegeError, "Cannot change email while banned"
     end
 
     if RateLimiter.check_limit("email:#{user.id}", 2, 24.hours)
@@ -22,7 +22,7 @@ class UserEmailChange
     else
       user.validate_email_format = true
       user.email = new_email
-      user.email_verification_key = '1' if YiffyAPI.config.enable_email_verification?
+      user.email_verification_key = "1" if YiffyAPI.config.enable_email_verification?
       user.save
 
       if user.errors.empty?

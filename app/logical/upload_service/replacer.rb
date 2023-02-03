@@ -11,16 +11,16 @@ class UploadService
 
     def create_backup_replacement
       begin
-        repl = post.replacements.new(creator_id: post.uploader_id, creator_ip_addr: post.uploader_ip_addr, status: 'original',
+        repl = post.replacements.new(creator_id: post.uploader_id, creator_ip_addr: post.uploader_ip_addr, status: "original",
                                      image_width: post.image_width, image_height: post.image_height, file_ext: post.file_ext,
                                      file_size: post.file_size, md5: post.md5, file_name: "#{post.md5}.#{post.file_ext}",
-                                     source: post.source, reason: 'Backup of original file', is_backup: true)
+                                     source: post.source, reason: "Backup of original file", is_backup: true)
         repl.replacement_file = YiffyAPI.config.storage_manager.open(YiffyAPI.config.storage_manager.file_path(post, post.file_ext, :original))
         repl.save
       rescue Exception => e
         raise ProcessingError, "Failed to create post file backup: #{e.message}"
       end
-      raise ProcessingError, "Could not create post file backup?" if !repl.valid?
+      raise ProcessingError, "Could not create post file backup" unless repl.valid?
     end
 
     def process!(penalize_current_uploader:)
@@ -40,7 +40,7 @@ class UploadService
           file: replacement.replacement_file,
           replaced_post: post,
           original_post_id: post.id,
-          replacement_id: replacement.id
+          replacement_id: replacement.id,
         )
 
         begin
@@ -82,10 +82,10 @@ class UploadService
         rescale_notes(post)
 
         replacement.update({
-          status: 'approved',
+          status: "approved",
           approver_id: CurrentUser.id,
           uploader_id_on_approve: previous_uploader,
-          penalize_uploader_on_approve: penalize_current_uploader.to_s.truthy?
+          penalize_uploader_on_approve: penalize_current_uploader.to_s.truthy?,
         })
 
         UserStatus.for_user(previous_uploader).update_all("own_post_replaced_count = own_post_replaced_count + 1")

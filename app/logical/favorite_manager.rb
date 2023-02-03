@@ -5,13 +5,11 @@ class FavoriteManager
     retries = 5
     begin
       Favorite.transaction(**ISOLATION) do
-        unless force
-          if user.favorite_count >= user.favorite_limit
-            raise Favorite::Error, "You can only keep up to #{user.favorite_limit} favorites."
-          end
+        if !force && (user.favorite_count >= user.favorite_limit)
+          raise Favorite::Error, "You can only have up to #{user.favorite_limit} favorites."
         end
 
-        Favorite.create(:user_id => user.id, :post_id => post.id)
+        Favorite.create(user_id: user.id, post_id: post.id)
         post.append_user_to_fav_string(user.id)
         post.do_not_version_changes = true
         post.save
@@ -31,14 +29,14 @@ class FavoriteManager
     retries = 5
     begin
       Favorite.transaction(**ISOLATION) do
-        unless Favorite.for_user(user.id).where(:user_id => user.id, :post_id => post_id).exists?
+        unless Favorite.for_user(user.id).where(user_id: user.id, post_id: post_id).exists?
           return
         end
 
         Favorite.for_user(user.id).where(post_id: post_id).destroy_all
-        post.delete_user_from_fav_string(user.id) if post
+        post&.delete_user_from_fav_string(user.id)
         post.do_not_version_changes = true
-        post.save if post
+        post.save
       end
     rescue ActiveRecord::SerializationFailure => e
       retries -= 1
@@ -48,7 +46,7 @@ class FavoriteManager
   end
 
   def self.give_to_parent!(post)
-    # TODO Much better and more intelligent logic can exist for this
+    # TODO: Much better and more intelligent logic can exist for this
     parent = post.parent
     return false unless parent
     post.favorites.each do |fav|

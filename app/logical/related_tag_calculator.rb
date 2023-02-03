@@ -10,7 +10,7 @@ class RelatedTagCalculator
   end
 
   def self.calculate_from_posts(posts)
-    counts = Hash.new {|h, k| h[k] = 0}
+    counts = Hash.new { |h, k| h[k] = 0 }
 
     posts.flat_map(&:tag_array).each do |tag|
       counts[tag] += 1
@@ -20,7 +20,7 @@ class RelatedTagCalculator
   end
 
   def self.calculate_from_sample(tags, sample_size, category_constraint = nil, max_results = MAX_RESULTS)
-    Post.with_timeout(5_000, [], {:tags => tags}) do
+    Post.with_timeout(5_000, [], { tags: tags }) do
       sample = Post.sample(tags, sample_size)
       posts_with_tags = sample.with_unflattened_tags
 
@@ -34,7 +34,7 @@ class RelatedTagCalculator
   end
 
   def self.convert_hash_to_array(hash, limit = MAX_RESULTS)
-    hash.to_a.sort_by {|x| [-x[1], x[0]] }.slice(0, limit)
+    hash.to_a.sort_by { |x| [-x[1], x[0]] }.slice(0, limit)
   end
 
   def self.convert_hash_to_string(hash)

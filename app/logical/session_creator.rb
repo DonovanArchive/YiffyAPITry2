@@ -1,7 +1,7 @@
 class SessionCreator
   attr_reader :session, :cookies, :name, :password, :ip_addr, :remember, :secure
 
-  def initialize(session, cookies, name, password, ip_addr, remember = false, secure = false)
+  def initialize(session, cookies, name, password, ip_addr, remember: false, secure: false)
     @session = session
     @cookies = cookies
     @name = name
@@ -13,7 +13,7 @@ class SessionCreator
 
   def authenticate
     if User.authenticate(name, password)
-      user = User.find_by_name(name)
+      user = User.find_by(name: name)
 
       session[:user_id] = user.id
       session[:ph] = user.password_token
@@ -21,11 +21,11 @@ class SessionCreator
 
       if remember
         verifier = ActiveSupport::MessageVerifier.new(YiffyAPI.config.remember_key, serializer: JSON, digest: "SHA256")
-        cookies.encrypted[:remember] = {value: verifier.generate("#{user.id}:#{user.password_token}", purpose: "rbr", expires_in: 14.days), expires: Time.now + 14.days, httponly: true, same_site: :lax, secure: Rails.env.production?}
+        cookies.encrypted[:remember] = { value: verifier.generate("#{user.id}:#{user.password_token}", purpose: "rbr", expires_in: 14.days), expires: Time.now + 14.days, httponly: true, same_site: :lax, secure: Rails.env.production? }
       end
-      return true
+      true
     else
-      return false
+      false
     end
   end
 end

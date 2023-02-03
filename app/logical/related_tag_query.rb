@@ -30,22 +30,22 @@ class RelatedTagQuery
     {
       query: query,
       category: category,
-      tags: tags_with_categories(tags)
+      tags: tags_with_categories(tags),
     }
   end
 
-protected
+  protected
 
   def tags_with_categories(list_of_tag_names)
     Tag.categories_for(list_of_tag_names).to_a
   end
 
   def pattern_matching_tags
-    Tag.name_matches(query).where("post_count > 0").order("post_count desc").limit(50).sort_by {|x| x.name}.map(&:name)
+    Tag.name_matches(query).where("post_count > 0").order("post_count desc").limit(50).sort_by(&:name).map(&:name)
   end
 
   def related_tags
-    tag = Tag.find_by_name(query.strip)
+    tag = Tag.find_by(name: query.strip)
 
     if tag
       tag.related_tag_array.map(&:first)
