@@ -65,11 +65,9 @@ def api_request(path, base = "https://e621.net")
   JSON.parse(response.body)
 end
 
-
-
 def create_post(post)
   url = post["file"]["url"]
-  url = "https://static1.e621.net/data/#{post["file"]["md5"][0..1]}/#{post["file"]["md5"][2..3]}/#{post["file"]["md5"]}.#{post["file"]["ext"]}" if url.nil?
+  url = "https://static1.e621.net/data/#{post['file']['md5'][0..1]}/#{post['file']['md5'][2..3]}/#{post['file']['md5']}.#{post['file']['ext']}" if url.nil?
   puts "Pulling Post ##{post['id']} (#{url})"
   post["tags"].each do |category, tags|
     Tag.find_or_create_by_name_list(tags.map { |tag| "#{category}:#{tag}" })
@@ -87,7 +85,8 @@ def create_post(post)
   })
   upload = service.start!
   if upload.post.nil?
-    puts "Upload Failed: #{upload.errors.full_messages.join(', ')}"
+    puts upload.backtrace
+    raise "Upload Failed: #{upload.status}"
   end
   upload.post
 end

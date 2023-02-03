@@ -1,7 +1,7 @@
 class StorageManager
   class Error < StandardError; end
 
-  DEFAULT_BASE_DIR = Rails.public_path.join("data")
+  DEFAULT_BASE_DIR = Rails.public_path.join("data").to_s
   IMAGE_TYPES = %i[preview large crop original].freeze
   MASCOT_PREFIX = "mascots".freeze
 
@@ -71,7 +71,7 @@ class StorageManager
       delete(file_path(md5, file_ext, type, false))
       delete(file_path(md5, file_ext, type, true))
     end
-    YiffyAPI.config.video_rescales.each do |k,v|
+    YiffyAPI.config.video_rescales.each do |k, v|
       %w[mp4 webm].each do |ext|
         delete(file_path(md5, ext, :scaled, false, scale_factor: k.to_s))
         delete(file_path(md5, ext, :scaled, true, scale_factor: k.to_s))
@@ -102,7 +102,7 @@ class StorageManager
     user_id = CurrentUser.id
     # ip = CurrentUser.ip_addr
     time = (Time.now + 15.minutes).to_i
-    hmac = Digest::MD5.base64digest("#{time} #{url} #{user_id} #{secret}").tr("+/","-_").gsub("==","")
+    hmac = Digest::MD5.base64digest("#{time} #{url} #{user_id} #{secret}").tr("+/", "-_").gsub("==", "")
     "?auth=#{hmac}&expires=#{time}&uid=#{user_id}"
   end
 
@@ -112,18 +112,17 @@ class StorageManager
     base = post.protect_file? ? "#{base_path}/#{protected_prefix}" : base_path
 
     return "#{root_url}/images/download-preview.png" if type == :preview && !post.has_preview?
-    case type
-    when :preview
-      "#{base}/preview/#{subdir}#{file}"
-    when :crop
-      "#{base}/crop/#{subdir}#{file}"
-    when :scaled
-      "#{base}/sample/#{subdir}#{file}"
-    when :large && post.has_large?
-      "#{base}/sample/#{subdir}#{file}"
-    else
-      "#{base}/#{subdir}#{file}"
-    end
+    path =
+      case type
+      when :preview
+        "#{base}/preview/#{subdir}#{file}"
+      when :crop
+        "#{base}/crop/#{subdir}#{file}"
+      when :scaled
+        "#{base}/sample/#{subdir}#{file}"
+      else
+        type == :large && post.has_large? ? "#{base}/sample/#{subdir}#{file}" : "#{base}/#{subdir}#{file}"
+      end
     if post.protect_file?
       "#{base_url}#{path}#{protected_params(path, post)}"
     else
@@ -149,7 +148,7 @@ class StorageManager
     origin
   end
 
-  def file_path(post_or_md5, file_ext, type, protected: false, scale_factor: nil)
+  def file_path(post_or_md5, file_ext, type, protected = false, scale_factor: nil)
     md5 = post_or_md5.is_a?(String) ? post_or_md5 : post_or_md5.md5
     subdir = subdir_for(md5)
     file = file_name(md5, file_ext, type, scale_factor: scale_factor)
@@ -170,13 +169,14 @@ class StorageManager
   end
 
   def file_name(md5, file_ext, type, scale_factor: nil)
+    is_video = %w[mp4 webm].include?(file_ext)
     case type
     when :preview
-      "#{md5}.jpg"
+      "#{md5}.#{YiffyAPI.config.preview_file_type(type, is_video ? :video : :image)}"
     when :crop
-      "#{md5}.jpg"
+      "#{md5}.#{YiffyAPI.config.preview_file_type(type, is_video ? :video : :image)}"
     when :large
-      "#{large_image_prefix}#{md5}.jpg"
+      "#{large_image_prefix}#{md5}.#{YiffyAPI.config.preview_file_type(type, is_video ? :video : :image)}"
     when :original
       "#{md5}.#{file_ext}"
     when :scaled

@@ -1,9 +1,8 @@
 class IqdbProxy
-  module_function
 
   class Error < StandardError; end
 
-  def query(image_url)
+  def self.query(image_url)
     raise NotImplementedError if YiffyAPI.config.iqdbs_server.blank?
 
     url = URI.parse(YiffyAPI.config.iqdbs_server)
@@ -14,7 +13,7 @@ class IqdbProxy
     decorate_posts(json.parsed_response)
   end
 
-  def query_file(image)
+  def self.query_file(image)
     raise NotImplementedError if YiffyAPI.config.iqdbs_server.blank?
 
     url = URI.parse(YiffyAPI.config.iqdbs_server)
@@ -26,7 +25,7 @@ class IqdbProxy
     decorate_posts(json.parsed_response)
   end
 
-  def query_path(image_path)
+  def self.query_path(image_path)
     raise NotImplementedError if YiffyAPI.config.iqdbs_server.blank?
 
     f = File.open(image_path)
@@ -40,7 +39,7 @@ class IqdbProxy
     decorate_posts(json.parsed_response)
   end
 
-  def decorate_posts(json)
+  def self.decorate_posts(json)
     raise Error, "Server returned an error. Most likely the url is not found." unless json.is_a?(Array)
     json.map do |x|
       x["post"] = Post.find(x["post_id"])

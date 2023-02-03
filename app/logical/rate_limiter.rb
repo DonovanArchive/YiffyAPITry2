@@ -1,7 +1,6 @@
 class RateLimiter
-  module_function
 
-  def check_limit(key, max_attempts, lockout_time = 1.minute)
+  def self.check_limit(key, max_attempts, lockout_time = 1.minute)
     return true if Cache.fetch("#{key}:lockout")
 
     attempts = Cache.fetch(key) || 0
@@ -13,13 +12,13 @@ class RateLimiter
     false
   end
 
-  def hit(key, time_period = 1.minute)
+  def self.hit(key, time_period = 1.minute)
     value = Cache.fetch(key) || 0
     Cache.write(key, value.to_i + 1, time_period)
     value.to_i + 1
   end
 
-  def reset_limit(key)
+  def self.reset_limit(key)
     Cache.delete(key)
   end
 end

@@ -1,7 +1,6 @@
 module Maintenance
-  module_function
 
-  def daily
+  def self.daily
     return if YiffyAPI.config.readonly_mode?
 
     ignoring_exceptions { PostPruner.new.prune! }
@@ -14,7 +13,7 @@ module Maintenance
     ignoring_exceptions { StatsUpdater.run! }
   end
 
-  def ignoring_exceptions
+  def self.ignoring_exceptions
     ActiveRecord::Base.connection.execute("set statement_timeout = 0")
     yield
   rescue StandardError => e

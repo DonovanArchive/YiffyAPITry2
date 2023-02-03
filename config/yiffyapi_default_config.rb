@@ -372,6 +372,12 @@ module YiffyAPI
       }
     end
 
+    # :original, :preview, :large, :crop
+    # :video, :image
+    def preview_file_type(_preview_type, _file_type)
+      "webp"
+    end
+
     def max_mascot_file_sizes
       {
         "png" => 1.megabyte,
@@ -437,7 +443,7 @@ module YiffyAPI
       # base_url - where to serve files from (default: http://#{hostname}/data)
       # hierarchical: false - store files in a single directory
       # hierarchical: true - store files in a hierarchical directory structure, based on the MD5 hash
-      StorageManager::Local.new(base_dir: Rails.root.join("public", "data"), hierarchical: true)
+      StorageManager::Local.new(base_dir: Rails.public_path.join("data").to_s, hierarchical: true)
 
       # Select the storage method based on the post's id and type (preview, large, or original).
       # StorageManager::Hybrid.new do |id, md5, file_ext, type|

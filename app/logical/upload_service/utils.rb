@@ -1,11 +1,11 @@
 class UploadService
   module Utils
-    module_function
+
     class CorruptFileError < RuntimeError; end
 
     IMAGE_TYPES = %i[original large preview crop].freeze
 
-    def delete_file(md5, file_ext, upload_id = nil)
+    def self.delete_file(md5, file_ext, upload_id = nil)
       if Post.where(md5: md5).exists?
         if upload_id.present? && Upload.where(id: upload_id).exists?
           CurrentUser.as_system do
@@ -19,7 +19,7 @@ class UploadService
       YiffyAPI.config.storage_manager.delete_post_files(md5, file_ext)
     end
 
-    def distribute_files(file, record, type, original_post_id: nil)
+    def self.distribute_files(file, record, type, original_post_id: nil)
       # need to do this for hybrid storage manager
       post = Post.new
       post.id = original_post_id if original_post_id.present?
@@ -30,11 +30,11 @@ class UploadService
       end
     end
 
-    def generate_resizes(file, upload)
+    def self.generate_resizes(file, upload)
       PostThumbnailer.generate_resizes(file, upload.image_height, upload.image_width, upload.is_video? ? :video : :image)
     end
 
-    def process_file(upload, file, original_post_id: nil)
+    def self.process_file(upload, file, original_post_id: nil)
       upload.file = file
       upload.file_ext = upload.file_header_to_file_ext(file.path)
       upload.file_size = file.size
@@ -65,7 +65,7 @@ class UploadService
       UploadDeleteFilesJob.set(wait: 24.hours).perform_later(upload.md5, upload.file_ext, upload.id)
     end
 
-    def automatic_tags(upload, file)
+    def self.automatic_tags(upload, file)
       return "" unless YiffyAPI.config.enable_dimension_autotagging?
 
       tags = []
@@ -75,7 +75,7 @@ class UploadService
       tags.join(" ")
     end
 
-    def get_file_for_upload(upload, file: nil)
+    def self.get_file_for_upload(upload, file: nil)
       return file if file.present?
       raise RuntimeError, "No file or source URL provided" if upload.direct_url_parsed.blank?
 

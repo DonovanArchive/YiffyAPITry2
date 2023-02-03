@@ -29,7 +29,6 @@ require "openssl"
 require "base64"
 
 module Pbkdf2
-  module_function
 
   PBKDF2_ITERATIONS = 20_000
   SALT_BYTE_SIZE = 24
@@ -41,7 +40,7 @@ module Pbkdf2
   SALT_INDEX = 2
   HASH_INDEX = 3
 
-  def create_hash(password)
+  def self.create_hash(password)
     salt = SecureRandom.base64(SALT_BYTE_SIZE)
     pbkdf2 = OpenSSL::PKCS5.pbkdf2_hmac_sha1(
       password,
@@ -52,7 +51,7 @@ module Pbkdf2
     ["sha1", PBKDF2_ITERATIONS, salt, Base64.encode64(pbkdf2)].join(SECTION_DELIMITER)
   end
 
-  def validate_password(password, correct_hash)
+  def self.validate_password(password, correct_hash)
     params = correct_hash.split(SECTION_DELIMITER)
     return false if params.length != HASH_SECTIONS
 
@@ -67,7 +66,7 @@ module Pbkdf2
     pbkdf2 == test_hash
   end
 
-  def needs_upgrade(hash)
+  def self.needs_upgrade(hash)
     params = hash.split(SECTION_DELIMITER)
     if params.length != HASH_SECTIONS
       return true

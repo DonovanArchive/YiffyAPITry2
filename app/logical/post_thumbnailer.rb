@@ -1,7 +1,6 @@
 module PostThumbnailer
-  module_function
 
-  def generate_resizes(file, height, width, type)
+  def self.generate_resizes(file, height, width, type)
     case type
     when :video
       video = FFMPEG::Movie.new(file.path)
@@ -19,7 +18,7 @@ module PostThumbnailer
     [preview_file, crop_file, sample_file]
   end
 
-  def generate_thumbnail(file, type)
+  def self.generate_thumbnail(file, type)
     case type
     when :video
       preview_file = generate_video_preview_for(file.path, YiffyAPI.config.small_image_width)
@@ -30,16 +29,16 @@ module PostThumbnailer
     preview_file
   end
 
-  def generate_video_crop_for(video, width)
-    vp = Tempfile.new(%w[video-preview .jpg], binmode: true)
-    video.screenshot(vp.path, {seek_time: 0, resolution: "#{video.width}x#{video.height}"})
+  def self.generate_video_crop_for(video, width)
+    vp = Tempfile.new(["video-preview", ".#{YiffyAPI.config.preview_file_type(:crop, :video)}"], binmode: true)
+    video.screenshot(vp.path, { seek_time: 0, resolution: "#{video.width}x#{video.height}" })
     crop = DanbooruImageResizer.crop(vp, width, width, 87)
     vp.close
     crop
   end
 
-  def generate_video_preview_for(video, width)
-    output_file = Tempfile.new(%w[video-preview .jpg], binmode: true)
+  def self.generate_video_preview_for(video, width)
+    output_file = Tempfile.new(["video-preview", ".#{YiffyAPI.config.preview_file_type(:preview, :video)}"], binmode: true)
     stdout, stderr, status = Open3.capture3(YiffyAPI.config.ffmpeg_path, "-y", "-i", video, "-vf", "thumbnail,scale=#{width}:-1", "-frames:v", "1", output_file.path)
 
     unless status == 0
@@ -50,8 +49,8 @@ module PostThumbnailer
     output_file
   end
 
-  def generate_video_sample_for(video)
-    output_file = Tempfile.new(%w[video-sample .jpg], binmode: true)
+  def self.generate_video_sample_for(video)
+    output_file = Tempfile.new(["video-sample", ".#{YiffyAPI.config.preview_file_type(:large, :video)}"], binmode: true)
     stdout, stderr, status = Open3.capture3(YiffyAPI.config.ffmpeg_path, "-y", "-i", video, "-vf", "thumbnail", "-frames:v", "1", output_file.path)
 
     unless status == 0

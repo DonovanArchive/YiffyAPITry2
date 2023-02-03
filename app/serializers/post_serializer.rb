@@ -68,7 +68,7 @@ class PostSerializer < ActiveModel::Serializer
           type: 'image',
           height: dims[1],
           width: dims[0],
-          url: object.visible? ? object.scaled_url_ext(k, 'jpg') : nil
+          url: object.visible? ? object.scaled_url_ext(k, 'webp') : nil
       }
     end
     sample_attributes = {

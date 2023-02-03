@@ -1,7 +1,7 @@
 class SessionCreator
   attr_reader :session, :cookies, :name, :password, :ip_addr, :remember, :secure
 
-  def initialize(session, cookies, name, password, ip_addr, remember: false, secure: false)
+  def initialize(session, cookies, name, password, ip_addr, remember = false, secure = false)
     @session = session
     @cookies = cookies
     @name = name

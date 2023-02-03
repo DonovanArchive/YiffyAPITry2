@@ -1,9 +1,8 @@
 class VoteManager
-  module_function
 
   ISOLATION = Rails.env.test? ? {} : { isolation: :repeatable_read }
 
-  def vote!(user:, post:, score:)
+  def self.vote!(user:, post:, score:)
     @vote = nil
     retries = 5
     score = score.to_i
@@ -47,7 +46,7 @@ class VoteManager
     @vote
   end
 
-  def unvote!(user:, post:, force: false)
+  def self.unvote!(user:, post:, force: false)
     retries = 5
     begin
       PostVote.transaction(**ISOLATION) do
@@ -68,7 +67,7 @@ class VoteManager
     post.update_index
   end
 
-  def lock!(id)
+  def self.lock!(id)
     post = nil
     PostVote.transaction(**ISOLATION) do
       vote = PostVote.find_by(id: id)
@@ -80,12 +79,12 @@ class VoteManager
     post&.update_index
   end
 
-  def admin_unvote!(id)
+  def self.admin_unvote!(id)
     vote = PostVote.find_by(id: id)
     unvote!(post: vote.post, user: vote.user, force: true) if vote
   end
 
-  def comment_vote!(user:, comment:, score:)
+  def self.comment_vote!(user:, comment:, score:)
     retries = 5
     @vote = nil
     score = score.to_i
@@ -119,7 +118,7 @@ class VoteManager
     @vote
   end
 
-  def comment_unvote!(user:, comment:, force: false)
+  def self.comment_unvote!(user:, comment:, force: false)
     CommentVote.transaction(**ISOLATION) do
       CommentVote.uncached do
         vote = CommentVote.where(user_id: user.id, comment_id: comment.id).first
@@ -131,7 +130,7 @@ class VoteManager
     end
   end
 
-  def comment_lock!(id)
+  def self.comment_lock!(id)
     CommentVote.transaction(**ISOLATION) do
       vote = CommentVote.find_by(id: id)
       return unless vote
@@ -141,12 +140,12 @@ class VoteManager
     end
   end
 
-  def admin_comment_unvote!(id)
+  def self.admin_comment_unvote!(id)
     vote = CommentVote.find_by(id: id)
     comment_unvote!(comment: vote.comment, user: vote.user, force: true) if vote
   end
 
-  def subtract_vote(post, vote)
+  def self.subtract_vote(post, vote)
     vote_cols = "score = score - #{vote.score}"
     if vote.score > 0
       vote_cols += ", up_score = up_score - #{vote.score}"

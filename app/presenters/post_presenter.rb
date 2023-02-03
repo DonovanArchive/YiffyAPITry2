@@ -161,7 +161,7 @@ class PostPresenter < Presenter
           type: "image",
           height: dims[1],
           width: dims[0],
-          url: post.visible? ? post.scaled_url_ext(k, "jpg") : nil
+          url: post.visible? ? post.scaled_url_ext(k, "webp") : nil
       }
     end
     {
